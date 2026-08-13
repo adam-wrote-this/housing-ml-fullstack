@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+
+# Node / Next.js
+node_modules/
+.next/
+dist/
+coverage/
+
+# Java / Maven / Gradle
+target/
+.gradle/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Model artifacts
+*.joblib
+*.pkl
+*.pickle
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+*.log
