@@ -1,6 +1,8 @@
-"""
+﻿"""
 Pydantic schemas for housing price prediction service.
 Supports both single object and batch array input formats.
+Column names match housing.csv: square_footage, bedrooms, bathrooms,
+year_built, lot_size, distance_to_city_center, school_rating
 """
 
 from typing import List, Union
@@ -8,27 +10,25 @@ from pydantic import BaseModel, Field
 
 
 class HousingFeatures(BaseModel):
-    """Schema for single housing feature object."""
-    longitude: float = Field(..., description="Longitude coordinate")
-    latitude: float = Field(..., description="Latitude coordinate")
-    housing_median_age: float = Field(..., description="Housing median age in years")
-    total_rooms: float = Field(..., description="Total number of rooms")
-    total_bedrooms: float = Field(..., description="Total number of bedrooms")
-    population: float = Field(..., description="Population count")
-    households: float = Field(..., description="Number of households")
-    median_income: float = Field(..., description="Median income")
+    """Schema for a single housing feature object."""
+    square_footage: float = Field(..., description="Total square footage of the house")
+    bedrooms: float = Field(..., description="Number of bedrooms")
+    bathrooms: float = Field(..., description="Number of bathrooms")
+    year_built: float = Field(..., description="Year the house was built")
+    lot_size: float = Field(..., description="Lot size in square feet")
+    distance_to_city_center: float = Field(..., description="Distance to city center in miles")
+    school_rating: float = Field(..., description="School rating (1-10)")
 
     class Config:
         json_schema_extra = {
             "example": {
-                "longitude": -122.25,
-                "latitude": 37.85,
-                "housing_median_age": 52.0,
-                "total_rooms": 1820.0,
-                "total_bedrooms": 300.0,
-                "population": 806.0,
-                "households": 270.0,
-                "median_income": 3.1,
+                "square_footage": 1850,
+                "bedrooms": 3,
+                "bathrooms": 2,
+                "year_built": 1998,
+                "lot_size": 7500,
+                "distance_to_city_center": 5.6,
+                "school_rating": 8.2
             }
         }
 
@@ -37,7 +37,7 @@ class PredictionResponse(BaseModel):
     """Schema for prediction response."""
     predictions: Union[float, List[float]] = Field(..., description="Predicted house price(s)")
     status: str = Field(default="success", description="Status of prediction")
-    message: str = Field(default="", description="Optional message or error details")
+    message: str = Field(default="", description="Optional message")
 
 
 class ModelInfoResponse(BaseModel):
