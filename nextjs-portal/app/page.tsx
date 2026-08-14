@@ -1,23 +1,26 @@
+"use client";
+
 import Link from "next/link";
+import { useAppUi } from "@/components/AppUiProvider";
 import { Card } from "@/components/ui/Card";
+import { translations } from "@/lib/i18n";
 
 export default function HomePage() {
+  const { locale } = useAppUi();
+  const t = translations[locale];
+
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      <Card title="App1 - Property Prediction">
-        <p className="mb-4 text-sm text-slate-700">
-          Submit property features and get instant predicted price from the Python backend.
-        </p>
+      <Card title={t.homeTitle1}>
+        <p className="mb-4 text-sm text-slate-700">{t.homeDesc1}</p>
         <Link href="/property-form" className="font-medium">
-          Open property form
+          {t.openPropertyForm}
         </Link>
       </Card>
-      <Card title="App2 - Market Analysis">
-        <p className="mb-4 text-sm text-slate-700">
-          Explore market segments and run what-if simulation powered by the Java backend.
-        </p>
+      <Card title={t.homeTitle2}>
+        <p className="mb-4 text-sm text-slate-700">{t.homeDesc2}</p>
         <Link href="/market-analysis" className="font-medium">
-          Open market analysis
+          {t.openMarketAnalysis}
         </Link>
       </Card>
     </div>

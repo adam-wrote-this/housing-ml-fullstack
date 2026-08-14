@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { translations } from "@/lib/i18n";
 import type { MarketSegment, WhatIfRequest, WhatIfResponse } from "@/lib/types";
 
 const initialSimulation: WhatIfRequest = {
@@ -24,7 +25,8 @@ export default function MarketAnalysisClient() {
   const [segments, setSegments] = useState<MarketSegment[] | null>(null);
   const [simulation, setSimulation] = useState<WhatIfRequest>(initialSimulation);
   const [simulationResult, setSimulationResult] = useState<WhatIfResponse | null>(null);
-  const { setLoading, setError, clearError } = useAppUi();
+  const { locale, setLoading, setError, clearError } = useAppUi();
+  const t = translations[locale];
 
   useEffect(() => {
     let active = true;
@@ -69,9 +71,15 @@ export default function MarketAnalysisClient() {
     }
   }
 
+  const numberFormatter = new Intl.NumberFormat(locale === "en" ? "en-US" : "zh-CN", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0
+  });
+
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Card title="Market Segments">
+      <Card title={locale === "en" ? "Market Segments" : "市场分段"}>
         {!segments ? (
           <div className="space-y-2">
             <Skeleton className="h-6 w-full" />
@@ -83,9 +91,9 @@ export default function MarketAnalysisClient() {
             <table className="min-w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-left">
-                  <th className="px-2 py-2 font-semibold">Segment</th>
-                  <th className="px-2 py-2 font-semibold">Count</th>
-                  <th className="px-2 py-2 font-semibold">Avg Price</th>
+                  <th className="px-2 py-2 font-semibold">{t.segment}</th>
+                  <th className="px-2 py-2 font-semibold">{t.count}</th>
+                  <th className="px-2 py-2 font-semibold">{t.avgPrice}</th>
                 </tr>
               </thead>
               <tbody>
@@ -93,13 +101,7 @@ export default function MarketAnalysisClient() {
                   <tr key={segment.segment} className="border-b border-slate-100">
                     <td className="px-2 py-2">{segment.segment}</td>
                     <td className="px-2 py-2">{segment.count}</td>
-                    <td className="px-2 py-2">
-                      {new Intl.NumberFormat("en-US", {
-                        style: "currency",
-                        currency: "USD",
-                        maximumFractionDigits: 0
-                      }).format(segment.avgPrice ?? 0)}
-                    </td>
+                    <td className="px-2 py-2">{numberFormatter.format(segment.avgPrice ?? 0)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -108,10 +110,10 @@ export default function MarketAnalysisClient() {
         )}
       </Card>
 
-      <Card title="What-if Simulation">
+      <Card title={t.whatIfTitle}>
         <form className="space-y-3" onSubmit={onRunSimulation}>
           <Input
-            label="Square Footage"
+            label={locale === "en" ? "Square Footage" : "建筑面积"}
             type="range"
             min={600}
             max={5000}
@@ -124,10 +126,12 @@ export default function MarketAnalysisClient() {
               }))
             }
           />
-          <p className="text-xs text-slate-600">Current: {simulation.squareFootage} sqft</p>
+          <p className="text-xs text-slate-600">
+            {t.current}: {simulation.squareFootage} sqft
+          </p>
 
           <Input
-            label="Baseline Square Footage"
+            label={locale === "en" ? "Baseline Square Footage" : "基准建筑面积"}
             type="number"
             step="any"
             value={simulation.baselineSquareFootage ?? 0}
@@ -141,7 +145,7 @@ export default function MarketAnalysisClient() {
 
           <div className="grid grid-cols-2 gap-2">
             <Input
-              label="Bedrooms"
+              label={locale === "en" ? "Bedrooms" : "卧室数"}
               type="number"
               step="any"
               value={simulation.bedrooms}
@@ -153,7 +157,7 @@ export default function MarketAnalysisClient() {
               }
             />
             <Input
-              label="Bathrooms"
+              label={locale === "en" ? "Bathrooms" : "浴室数"}
               type="number"
               step="any"
               value={simulation.bathrooms}
@@ -165,7 +169,7 @@ export default function MarketAnalysisClient() {
               }
             />
             <Input
-              label="Year Built"
+              label={locale === "en" ? "Year Built" : "建成年份"}
               type="number"
               step="1"
               value={simulation.yearBuilt}
@@ -177,7 +181,7 @@ export default function MarketAnalysisClient() {
               }
             />
             <Input
-              label="Lot Size"
+              label={locale === "en" ? "Lot Size" : "地块面积"}
               type="number"
               step="any"
               value={simulation.lotSize}
@@ -189,7 +193,7 @@ export default function MarketAnalysisClient() {
               }
             />
             <Input
-              label="Distance to City Center"
+              label={locale === "en" ? "Distance to City Center" : "到市中心距离"}
               type="number"
               step="any"
               value={simulation.distanceToCityCenter}
@@ -201,7 +205,7 @@ export default function MarketAnalysisClient() {
               }
             />
             <Input
-              label="School Rating"
+              label={locale === "en" ? "School Rating" : "学校评级"}
               type="number"
               step="any"
               value={simulation.schoolRating}
@@ -214,15 +218,15 @@ export default function MarketAnalysisClient() {
             />
           </div>
 
-          <Button type="submit">Run What-if</Button>
+          <Button type="submit">{t.runWhatIf}</Button>
         </form>
 
         {simulationResult ? (
           <div className="mt-3 rounded-md border border-brand-50 bg-brand-50 p-3 text-sm text-slate-800">
             <p>
-              Predicted:{" "}
+              {t.predicted}:{" "}
               <strong>
-                {new Intl.NumberFormat("en-US", {
+                {new Intl.NumberFormat(locale === "en" ? "en-US" : "zh-CN", {
                   style: "currency",
                   currency: "USD"
                 }).format(simulationResult.predictedPrice)}
@@ -230,9 +234,9 @@ export default function MarketAnalysisClient() {
             </p>
             {simulationResult.baselinePrice != null ? (
               <p>
-                Baseline:{" "}
+                {t.baseline}:{" "}
                 <strong>
-                  {new Intl.NumberFormat("en-US", {
+                  {new Intl.NumberFormat(locale === "en" ? "en-US" : "zh-CN", {
                     style: "currency",
                     currency: "USD"
                   }).format(simulationResult.baselinePrice)}
@@ -241,9 +245,9 @@ export default function MarketAnalysisClient() {
             ) : null}
             {simulationResult.priceDifference != null ? (
               <p>
-                Difference:{" "}
+                {t.difference}:{" "}
                 <strong>
-                  {new Intl.NumberFormat("en-US", {
+                  {new Intl.NumberFormat(locale === "en" ? "en-US" : "zh-CN", {
                     style: "currency",
                     currency: "USD"
                   }).format(simulationResult.priceDifference)}

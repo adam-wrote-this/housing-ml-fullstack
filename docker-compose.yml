@@ -59,11 +59,18 @@ services:
       context: ./nextjs-portal
       dockerfile: Dockerfile
     container_name: housing-frontend
+    working_dir: /app
     ports:
       - "3000:3000"
     environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
       - PYTHON_BACKEND_URL=http://app1-python:8001
       - JAVA_BACKEND_URL=http://app2-java:8080
+    volumes:
+      - ./nextjs-portal:/app
+      - /app/node_modules
     depends_on:
       app1-python:
         condition: service_healthy

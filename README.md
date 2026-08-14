@@ -12,7 +12,63 @@
 3. `backend-java`：App2 Java Spring Boot 市场分析后端  
 4. `nextjs-portal`：Next.js 统一前端门户（App Router）
 
-## 2. 前置环境（仅需一个）
+## 2. System Architecture / 系统架构
+
+```text
+                        ┌──────────────────────────────┐
+                        │   User / Browser            │
+                        │   用户 / 浏览器             │
+                        └──────────────┬───────────────┘
+                                       │
+                                       │ Access / 访问
+                                       ▼
+                ┌──────────────────────────────────────────┐
+                │  Next.js Portal / 前端门户             │
+                │  frontend:3000                         │
+                │  - Home / 首页                          │
+                │  - Property Form / 房源录入            │
+                │  - Market Analysis / 市场分析          │
+                └──────────────┬───────────────────────────┘
+                               │
+                ┌──────────────┼──────────────┐
+                │              │              │
+                ▼              ▼              ▼
+      ┌───────────────────┐   ┌───────────────────┐   ┌───────────────────┐
+      │ Python Backend    │   │ Java Backend      │   │ ML Inference      │
+      │ app1-python       │   │ app2-java         │   │ ml-service        │
+      │ 8001              │   │ 8080              │   │ 8000              │
+      │                   │   │                   │   │                   │
+      │ /property/predict │   │ /market/segments  │   │ /health           │
+      │                   │   │ /market/whatif    │   │ /predict          │
+      │                   │   │                   │   │ /model-info       │
+      └─────────┬─────────┘   └─────────┬─────────┘   └─────────┬─────────┘
+                │                         │                         │
+                │                         │                         │
+                └─────────────────────────┼─────────────────────────┘
+                                          │
+                                          │ Load training data / model
+                                          │ 读取训练数据 / 载入模型
+                                          ▼
+                            ┌──────────────────────────────┐
+                            │ housing.csv + LinearRegression│
+                            │ model / 模型                 │
+                            └──────────────────────────────┘
+```
+
+### Architecture Story / 架构说明
+
+- Frontend calls the appropriate backend via Next.js rewrites to avoid CORS issues.  
+  前端通过 Next.js rewrite 代理调用对应后端，避免跨域问题。
+- Python backend handles property submission and invokes the ML service for price prediction.  
+  Python 后端负责房源录入场景，接收表单数据后调用 ML 服务进行房价预测。
+- Java backend handles market analysis and what-if simulation using the same ML service.  
+  Java 后端负责市场分析场景，调用同一 ML 服务进行价格仿真和分段分析。
+- ML service trains and serves a `LinearRegression` model from `housing.csv`, exposing `/health`, `/predict`, and `/model-info`.  
+  ML 服务从 `housing.csv` 读取数据并提供线性回归模型，并暴露 `/health`、`/predict`、`/model-info` 等接口。
+- All inter-service communication uses Docker service names such as `http://ml-service:8000`, which keeps the system containerized and environment-agnostic.  
+  所有服务间通信均使用 Docker 内部服务名，例如 `http://ml-service:8000`，确保系统适配容器网络且不依赖宿主机硬编码。
+
+## 3. 前置环境（仅需一个）
 
 - Docker Desktop
 
@@ -23,7 +79,7 @@ docker --version
 docker compose version
 ```
 
-## 3. 一键启动 / 停止
+## 4. 一键启动 / 停止
 
 在仓库根目录执行：
 
@@ -43,7 +99,7 @@ docker compose down
 docker compose down --volumes --remove-orphans
 ```
 
-## 4. 服务访问地址
+## 5. 服务访问地址
 
 | 服务 | 地址 | 说明 |
 |---|---|---|
@@ -55,7 +111,7 @@ docker compose down --volumes --remove-orphans
 | Java 后端 | http://localhost:8080 | `/health` `/market/segments` `/market/whatif` |
 | Java Swagger | http://localhost:8080/docs | App2 接口文档 |
 
-## 5. 面试演示流程（建议）
+## 6. 面试演示流程（建议）
 
 1. 运行 `docker compose up --build`
 2. 打开前端首页 `http://localhost:3000`
@@ -67,7 +123,7 @@ docker compose down --volumes --remove-orphans
    - `http://localhost:8080/docs`
    - `http://localhost:8000/docs`
 
-## 6. 常见问题排查
+## 7. 常见问题排查
 
 ### Q1: 构建慢或看起来“卡住”
 首次构建会下载较大依赖（如 `numpy/scipy/pandas/scikit-learn`），通常是网络速度问题。  
@@ -98,7 +154,7 @@ curl http://localhost:8080/health
 ### Q4: 端口冲突
 本项目默认占用 `3000/8000/8001/8080`。如冲突，请先停掉本机占用进程，或修改 [docker-compose.yml](C:/Users/ASUS/Documents/Dev/housing-ml-fullstack/docker-compose.yml) 端口映射。
 
-## 7. 目录结构
+## 8. 目录结构
 
 ```text
 housing-ml-fullstack/
@@ -110,14 +166,14 @@ housing-ml-fullstack/
 └── docker-compose.yml
 ```
 
-## 8. 模块文档
+## 9. 模块文档
 
 - [ml-service/README.md](C:/Users/ASUS/Documents/Dev/housing-ml-fullstack/ml-service/README.md)
 - [backend-python/README.md](C:/Users/ASUS/Documents/Dev/housing-ml-fullstack/backend-python/README.md)
 - [backend-java/README.md](C:/Users/ASUS/Documents/Dev/housing-ml-fullstack/backend-java/README.md)
 - [nextjs-portal/README.md](C:/Users/ASUS/Documents/Dev/housing-ml-fullstack/nextjs-portal/README.md)
 
-## 9. 最终验收 Checklist
+## 10. 最终验收 Checklist
 
 - [x] 4 个服务源码完整，分层清晰
 - [x] 每个服务有独立 Dockerfile，可单独构建
