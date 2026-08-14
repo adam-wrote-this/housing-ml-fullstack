@@ -6,7 +6,7 @@ year_built, lot_size, distance_to_city_center, school_rating
 """
 
 from typing import List, Union
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class HousingFeatures(BaseModel):
@@ -50,6 +50,7 @@ class ModelInfoResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     """Schema for health check response."""
+    model_config = ConfigDict(protected_namespaces=())
     status: str = Field(..., description="Service status (ok/error)")
     model_loaded: bool = Field(..., description="Whether the model is loaded")
     version: str = Field(default="1.0.0", description="Service version")

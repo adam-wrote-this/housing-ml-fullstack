@@ -53,3 +53,19 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+
+  frontend:
+    build:
+      context: ./nextjs-portal
+      dockerfile: Dockerfile
+    container_name: housing-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - PYTHON_BACKEND_URL=http://app1-python:8001
+      - JAVA_BACKEND_URL=http://app2-java:8080
+    depends_on:
+      app1-python:
+        condition: service_healthy
+      app2-java:
+        condition: service_healthy
