@@ -66,20 +66,27 @@ export type MarketDashboard = {
 };
 
 export type WhatIfRequest = {
-  squareFootage: number;
-  bedrooms: number;
-  bathrooms: number;
-  yearBuilt: number;
-  lotSize: number;
-  distanceToCityCenter: number;
-  schoolRating: number;
-  baselineSquareFootage?: number;
+  propertyId: number;
+  overrides: Partial<Omit<MarketProperty, "id" | "price">>;
+};
+
+export type WhatIfImpact = {
+  field: keyof Omit<MarketProperty, "id" | "price">;
+  baselineValue: number;
+  scenarioValue: number;
+  priceImpact: number;
 };
 
 export type WhatIfResponse = {
+  propertyId: number;
+  actualPrice: number;
+  baselinePrediction: number;
+  scenarioPrediction: number;
+  percentageDifference: number;
+  impacts: WhatIfImpact[];
   predictedPrice: number;
-  baselinePrice?: number | null;
-  priceDifference?: number | null;
+  baselinePrice: number;
+  priceDifference: number;
   status: string;
   message: string;
 };

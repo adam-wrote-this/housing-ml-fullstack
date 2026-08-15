@@ -2,12 +2,15 @@ package com.property.service;
 
 import com.property.dto.HousingFeaturesDto;
 import com.property.dto.MlPredictionResponseDto;
+import com.property.dto.MlBatchPredictionResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +35,28 @@ public class MlClientService {
             MlPredictionResponseDto body = response.getBody();
             if (body == null || body.getPredictions() == null) {
                 throw new IllegalStateException("ML service returned an empty prediction");
+            }
+            return body.getPredictions();
+        } catch (RestClientException e) {
+            throw new RuntimeException("ML service unavailable: " + e.getMessage(), e);
+        }
+    }
+
+    public List<Double> predictBatch(List<HousingFeaturesDto> features) {
+        String url = mlServiceUrl + "/predict";
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<List<HousingFeaturesDto>> request = new HttpEntity<>(features, headers);
+            ResponseEntity<MlBatchPredictionResponseDto> response = restTemplate.postForEntity(
+                url,
+                request,
+                MlBatchPredictionResponseDto.class
+            );
+            MlBatchPredictionResponseDto body = response.getBody();
+            if (body == null || body.getPredictions() == null
+                    || body.getPredictions().size() != features.size()) {
+                throw new IllegalStateException("ML service returned an invalid batch prediction");
             }
             return body.getPredictions();
         } catch (RestClientException e) {

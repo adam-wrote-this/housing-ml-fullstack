@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/Card";
+import { formatTranslation } from "@/lib/i18n";
 import type { Translation } from "@/lib/i18n";
 
 type MarketOverviewProps = {
@@ -26,7 +27,10 @@ export function MarketOverview({
     { label: t.filteredProperties, value: `${filteredCount} / ${totalProperties}` },
     { label: t.avgPrice, value: formatCurrency(averagePrice) },
     { label: t.medianPrice, value: formatCurrency(medianPrice) },
-    { label: t.avgArea, value: `${formatNumber(averageArea)} sqft` }
+    {
+      label: t.avgArea,
+      value: formatTranslation(t.squareFeetValue, { value: formatNumber(averageArea) })
+    }
   ];
 
   return (

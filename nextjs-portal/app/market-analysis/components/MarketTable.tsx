@@ -5,13 +5,17 @@ import type {
   MarketFilterState,
   MarketSortKey
 } from "@/hooks/useMarketFilters";
+import { formatTranslation } from "@/lib/i18n";
 import type { Translation } from "@/lib/i18n";
+import type { MarketProperty } from "@/lib/types";
 
 type MarketTableProps = {
   market: MarketFilterState;
   translation: Translation;
   formatCurrency: (value: number) => string;
   formatNumber: (value: number) => string;
+  selectedPropertyId: number | null;
+  onAnalyze: (property: MarketProperty) => void;
 };
 
 type SortableHeadingProps = {
@@ -28,12 +32,21 @@ function SortableHeading({
   translation: t
 }: SortableHeadingProps) {
   const active = market.sortKey === column;
-  const nextDirection =
-    active && market.sortDirection === "asc" ? t.sortDescending : t.sortAscending;
+  const nextDirection = !active
+    ? t.sortAscending
+    : market.sortDirection === "asc"
+      ? t.sortDescending
+      : t.sortDefault;
   return (
     <th
       className="whitespace-nowrap px-3 py-3 text-left font-semibold"
-      aria-sort={active ? (market.sortDirection === "asc" ? "ascending" : "descending") : "none"}
+      aria-sort={
+        active
+          ? market.sortDirection === "asc"
+            ? "ascending"
+            : "descending"
+          : "none"
+      }
     >
       <button
         type="button"
@@ -54,16 +67,19 @@ export function MarketTable({
   market,
   translation: t,
   formatCurrency,
-  formatNumber
+  formatNumber,
+  selectedPropertyId,
+  onAnalyze
 }: MarketTableProps) {
   const start = market.filteredProperties.length === 0
     ? 0
     : (market.page - 1) * market.pageSize + 1;
   const end = Math.min(market.page * market.pageSize, market.filteredProperties.length);
-  const resultDescription = t.showingResults
-    .replace("{start}", String(start))
-    .replace("{end}", String(end))
-    .replace("{total}", String(market.filteredProperties.length));
+  const resultDescription = formatTranslation(t.showingResults, {
+    start,
+    end,
+    total: market.filteredProperties.length
+  });
 
   function exportCsv() {
     const headers = [
@@ -79,7 +95,7 @@ export function MarketTable({
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     const link = document.createElement("a");
     link.href = url;
-    link.download = "filtered-housing-market.csv";
+    link.download = t.marketCsvFileName;
     link.click();
     URL.revokeObjectURL(url);
   }
@@ -127,19 +143,46 @@ export function MarketTable({
                   ].map((heading) => (
                     <SortableHeading key={heading.column} {...heading} market={market} translation={t} />
                   ))}
+                  <th className="whitespace-nowrap px-3 py-3 text-left font-semibold">
+                    {t.actions}
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {market.visibleProperties.map((property) => (
-                  <tr key={property.id} className="border-b border-slate-100 hover:bg-slate-50">
+                  <tr
+                    key={property.id}
+                    className={`border-b border-slate-100 hover:bg-slate-50 ${
+                      selectedPropertyId === property.id ? "bg-brand-50" : ""
+                    }`}
+                  >
                     <td className="px-3 py-3 font-medium">#{property.id}</td>
                     <td className="whitespace-nowrap px-3 py-3 font-semibold">{formatCurrency(property.price)}</td>
-                    <td className="whitespace-nowrap px-3 py-3">{formatNumber(property.squareFootage)} sqft</td>
+                    <td className="whitespace-nowrap px-3 py-3">
+                      {formatTranslation(t.squareFeetValue, {
+                        value: formatNumber(property.squareFootage)
+                      })}
+                    </td>
                     <td className="px-3 py-3">{property.bedrooms}</td>
                     <td className="px-3 py-3">{property.bathrooms}</td>
                     <td className="px-3 py-3">{property.yearBuilt}</td>
                     <td className="px-3 py-3">{property.schoolRating}</td>
-                    <td className="whitespace-nowrap px-3 py-3">{property.distanceToCityCenter} mi</td>
+                    <td className="whitespace-nowrap px-3 py-3">
+                      {formatTranslation(t.milesValue, {
+                        value: property.distanceToCityCenter
+                      })}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-3">
+                      <button
+                        type="button"
+                        className="rounded-md border border-brand-600 px-2 py-1 text-xs font-medium text-brand-700 hover:bg-brand-50"
+                        onClick={() => onAnalyze(property)}
+                      >
+                        {selectedPropertyId === property.id
+                          ? t.selectedForAnalysis
+                          : t.analyzeProperty}
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -153,13 +196,37 @@ export function MarketTable({
                   <p className="font-semibold text-brand-700">{formatCurrency(property.price)}</p>
                 </div>
                 <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                  <div><dt className="text-slate-500">{t.area}</dt><dd>{property.squareFootage} sqft</dd></div>
+                  <div>
+                    <dt className="text-slate-500">{t.area}</dt>
+                    <dd>{formatTranslation(t.squareFeetValue, {
+                      value: property.squareFootage
+                    })}</dd>
+                  </div>
                   <div><dt className="text-slate-500">{t.beds} / {t.baths}</dt><dd>{property.bedrooms} / {property.bathrooms}</dd></div>
                   <div><dt className="text-slate-500">{t.yearBuilt}</dt><dd>{property.yearBuilt}</dd></div>
                   <div><dt className="text-slate-500">{t.school}</dt><dd>{property.schoolRating}</dd></div>
-                  <div><dt className="text-slate-500">{t.lotSize}</dt><dd>{property.lotSize} sqft</dd></div>
-                  <div><dt className="text-slate-500">{t.distance}</dt><dd>{property.distanceToCityCenter} mi</dd></div>
+                  <div>
+                    <dt className="text-slate-500">{t.lotSize}</dt>
+                    <dd>{formatTranslation(t.squareFeetValue, {
+                      value: property.lotSize
+                    })}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-slate-500">{t.distance}</dt>
+                    <dd>{formatTranslation(t.milesValue, {
+                      value: property.distanceToCityCenter
+                    })}</dd>
+                  </div>
                 </dl>
+                <button
+                  type="button"
+                  className="mt-3 w-full rounded-md border border-brand-600 px-3 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50"
+                  onClick={() => onAnalyze(property)}
+                >
+                  {selectedPropertyId === property.id
+                    ? t.selectedForAnalysis
+                    : t.analyzeProperty}
+                </button>
               </article>
             ))}
           </div>

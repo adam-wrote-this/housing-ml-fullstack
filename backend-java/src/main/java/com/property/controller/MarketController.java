@@ -42,6 +42,9 @@ public class MarketController {
 
     @PostMapping("/market/whatif")
     public ResponseEntity<?> whatIf(@RequestBody WhatIfRequestDto request) {
+        if (request.getPropertyId() != null) {
+            return ResponseEntity.ok(marketService.whatIf(request));
+        }
         if (request.getSquareFootage() == null || request.getBedrooms() == null
                 || request.getBathrooms() == null || request.getYearBuilt() == null
                 || request.getLotSize() == null || request.getDistanceToCityCenter() == null
@@ -51,6 +54,12 @@ public class MarketController {
         }
         WhatIfResponseDto response = marketService.whatIf(request);
         return ResponseEntity.ok(response);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> handleIllegalArgumentException(IllegalArgumentException ex) {
+        return ResponseEntity.badRequest()
+            .body(Map.of("status", "error", "message", ex.getMessage()));
     }
 
     @ExceptionHandler(RuntimeException.class)

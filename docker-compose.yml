@@ -48,6 +48,8 @@ services:
     environment:
       - ML_SERVICE_URL=http://ml-service:8000
       - DATASET_PATH=/app/shared/housing.csv
+      - CACHE_MAXIMUM_SIZE=1000
+      - CACHE_EXPIRE_AFTER_WRITE=15m
     volumes:
       - "./docs/House Price Dataset.csv:/app/shared/housing.csv:ro"
     depends_on:

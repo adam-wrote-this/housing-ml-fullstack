@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/Card";
+import { formatTranslation } from "@/lib/i18n";
 import type { Translation } from "@/lib/i18n";
 import type { MarketProperty } from "@/lib/types";
 
@@ -62,7 +63,11 @@ export function PriceDistribution({
       </div>
       <div className="mt-5 border-t border-slate-200 pt-4">
         <p className="text-sm text-slate-500">{t.avgSchoolRating}</p>
-        <p className="text-xl font-semibold">{formatNumber(averageSchoolRating)} / 10</p>
+        <p className="text-xl font-semibold">
+          {formatTranslation(t.ratingOutOfTen, {
+            value: formatNumber(averageSchoolRating)
+          })}
+        </p>
       </div>
     </Card>
   );

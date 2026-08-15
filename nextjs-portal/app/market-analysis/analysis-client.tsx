@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { MarketFiltersPanel } from "@/app/market-analysis/components/MarketFiltersPanel";
 import { MarketOverview } from "@/app/market-analysis/components/MarketOverview";
 import { MarketTable } from "@/app/market-analysis/components/MarketTable";
@@ -30,6 +30,7 @@ export default function MarketAnalysisClient({ initialDashboard }: MarketAnalysi
   const { locale } = useAppUi();
   const t = translations[locale];
   const market = useMarketFilters(initialDashboard.properties);
+  const [baselineProperty, setBaselineProperty] = useState<MarketProperty | null>(null);
 
   const currencyFormatter = useMemo(
     () =>
@@ -92,7 +93,13 @@ export default function MarketAnalysisClient({ initialDashboard }: MarketAnalysi
           formatCurrency={formatCurrency}
           formatNumber={formatNumber}
         />
-        <WhatIfPanel translation={t} formatCurrency={formatCurrency} />
+        <WhatIfPanel
+          baselineProperty={baselineProperty}
+          translation={t}
+          formatCurrency={formatCurrency}
+          formatNumber={formatNumber}
+          onClear={() => setBaselineProperty(null)}
+        />
       </div>
 
       <MarketTable
@@ -100,6 +107,16 @@ export default function MarketAnalysisClient({ initialDashboard }: MarketAnalysi
         translation={t}
         formatCurrency={formatCurrency}
         formatNumber={formatNumber}
+        selectedPropertyId={baselineProperty?.id ?? null}
+        onAnalyze={(property) => {
+          setBaselineProperty(property);
+          requestAnimationFrame(() => {
+            document.getElementById("what-if-analysis")?.scrollIntoView({
+              behavior: "smooth",
+              block: "center"
+            });
+          });
+        }}
       />
     </section>
   );

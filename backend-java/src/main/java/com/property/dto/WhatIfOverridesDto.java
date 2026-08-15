@@ -1,19 +1,15 @@
 package com.property.dto;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class WhatIfRequestDto {
-    private Long propertyId;
-    private WhatIfOverridesDto overrides;
-
-    // Legacy fields remain supported for existing API clients.
+public class WhatIfOverridesDto {
     private Double squareFootage;
     private Double bedrooms;
     private Double bathrooms;
@@ -21,5 +17,4 @@ public class WhatIfRequestDto {
     private Double lotSize;
     private Double distanceToCityCenter;
     private Double schoolRating;
-    private Double baselineSquareFootage;
 }

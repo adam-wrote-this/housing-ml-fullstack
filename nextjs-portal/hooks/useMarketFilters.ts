@@ -11,6 +11,10 @@ export type MarketSortKey =
   | "schoolRating"
   | "distanceToCityCenter";
 export type SortDirection = "asc" | "desc";
+type MarketSort = {
+  key: MarketSortKey | null;
+  direction: SortDirection | null;
+};
 
 export type MarketFilters = {
   searchId: string;
@@ -30,8 +34,10 @@ const PAGE_SIZE = 10;
 
 export function useMarketFilters(properties: MarketProperty[]) {
   const [filters, setFilters] = useState<MarketFilters>(initialFilters);
-  const [sortKey, setSortKey] = useState<MarketSortKey>("price");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [sort, setSort] = useState<MarketSort>({
+    key: null,
+    direction: null
+  });
   const [page, setPage] = useState(1);
 
   const updateFilter = useCallback(
@@ -44,13 +50,14 @@ export function useMarketFilters(properties: MarketProperty[]) {
   const resetFilters = useCallback(() => setFilters(initialFilters), []);
 
   const toggleSort = useCallback((key: MarketSortKey) => {
-    setSortKey((previousKey) => {
-      if (previousKey === key) {
-        setSortDirection((previous) => (previous === "asc" ? "desc" : "asc"));
-        return previousKey;
+    setSort((previous) => {
+      if (previous.key !== key || previous.direction === null) {
+        return { key, direction: "asc" };
       }
-      setSortDirection("asc");
-      return key;
+      if (previous.direction === "asc") {
+        return { key, direction: "desc" };
+      }
+      return { key: null, direction: null };
     });
   }, []);
 
@@ -74,15 +81,21 @@ export function useMarketFilters(properties: MarketProperty[]) {
       return matchesId && matchesBedrooms && matchesSchoolRating && matchesPrice;
     });
 
+    if (sort.key === null || sort.direction === null) {
+      return filtered;
+    }
+
+    const sortKey = sort.key;
+    const sortDirection = sort.direction;
     return filtered.sort((left, right) => {
       const difference = left[sortKey] - right[sortKey];
       return sortDirection === "asc" ? difference : -difference;
     });
-  }, [filters, properties, sortDirection, sortKey]);
+  }, [filters, properties, sort]);
 
   useEffect(() => {
     setPage(1);
-  }, [filters, sortDirection, sortKey]);
+  }, [filters, sort]);
 
   const totalPages = Math.max(1, Math.ceil(filteredProperties.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -95,8 +108,8 @@ export function useMarketFilters(properties: MarketProperty[]) {
     filters,
     updateFilter,
     resetFilters,
-    sortKey,
-    sortDirection,
+    sortKey: sort.key,
+    sortDirection: sort.direction,
     toggleSort,
     filteredProperties,
     visibleProperties,
