@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { Locale } from "@/lib/i18n";
 
 type AppUiContextValue = {
@@ -24,6 +24,8 @@ export function AppUiProvider({ children }: { children: React.ReactNode }) {
     document.documentElement.lang = locale;
   }, [locale]);
 
+  const clearError = useCallback(() => setError(""), []);
+
   const value = useMemo(
     () => ({
       loading,
@@ -31,10 +33,10 @@ export function AppUiProvider({ children }: { children: React.ReactNode }) {
       locale,
       setLoading,
       setError,
-      clearError: () => setError(""),
+      clearError,
       setLocale
     }),
-    [loading, error, locale]
+    [clearError, error, loading, locale]
   );
 
   return <AppUiContext.Provider value={value}>{children}</AppUiContext.Provider>;
