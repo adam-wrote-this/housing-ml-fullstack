@@ -1,0 +1,19 @@
+nextjs-portal/components/AppUiProvider.tsx
+  s_93a5dac3d44a1c::t_374b04938f7a35 3,27-28,36,39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "e4e2dad83c867c93990108f2ad79fab065599725",
+  "prompts": {},
+  "sessions": {
+    "s_93a5dac3d44a1c": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "a1276ed1-f074-4227-ac2b-ea29ac94391b",
+        "model": "gpt-5-mini"
+      },
+      "human_author": "ext.lijun116 <ext.lijun116@jd.com>"
+    }
+  }
+}
