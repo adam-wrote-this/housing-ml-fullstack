@@ -1,18 +1,22 @@
-"use client";
-
 import MarketAnalysisClient from "@/app/market-analysis/analysis-client";
-import { useAppUi } from "@/components/AppUiProvider";
-import { translations } from "@/lib/i18n";
+import type { MarketDashboard } from "@/lib/types";
 
-export default function MarketAnalysisPage() {
-  const { locale } = useAppUi();
-  const t = translations[locale];
+export const dynamic = "force-dynamic";
 
-  return (
-    <section className="space-y-4">
-      <h1 className="text-2xl font-semibold">{t.marketPageTitle}</h1>
-      <p className="text-sm text-slate-600">{t.marketPageIntro}</p>
-      <MarketAnalysisClient />
-    </section>
-  );
+async function loadMarketDashboard(): Promise<MarketDashboard> {
+  const javaBackendUrl = process.env.JAVA_BACKEND_URL || "http://localhost:8080";
+  const response = await fetch(`${javaBackendUrl}/market/dashboard`, {
+    cache: "no-store"
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to load market dashboard (${response.status})`);
+  }
+
+  return (await response.json()) as MarketDashboard;
+}
+
+export default async function MarketAnalysisPage() {
+  const dashboard = await loadMarketDashboard();
+  return <MarketAnalysisClient initialDashboard={dashboard} />;
 }

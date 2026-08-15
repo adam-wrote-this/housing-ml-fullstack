@@ -1,13 +1,16 @@
 services:
   ml-service:
     build:
-      context: ./ml-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ml-service/Dockerfile
     container_name: housing-ml-service
     ports:
       - "8000:8000"
     environment:
       - PYTHONUNBUFFERED=1
+      - DATASET_PATH=/app/shared/housing.csv
+    volumes:
+      - "./docs/House Price Dataset.csv:/app/shared/housing.csv:ro"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 10s
@@ -44,6 +47,9 @@ services:
       - "8080:8080"
     environment:
       - ML_SERVICE_URL=http://ml-service:8000
+      - DATASET_PATH=/app/shared/housing.csv
+    volumes:
+      - "./docs/House Price Dataset.csv:/app/shared/housing.csv:ro"
     depends_on:
       ml-service:
         condition: service_healthy

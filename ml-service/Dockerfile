@@ -8,18 +8,19 @@ WORKDIR /app
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    DATASET_PATH=/app/shared/housing.csv
 
 # Stage 1: Install dependencies
-COPY requirements.txt .
+COPY ml-service/requirements.txt .
 RUN pip install --no-cache-dir --retries 5 --default-timeout=120 -r requirements.txt
 
 # Stage 2: Prepare code and data
-COPY housing.csv .
-COPY schemas.py .
-COPY train.py .
-COPY utils.py .
-COPY main.py .
+COPY ["docs/House Price Dataset.csv", "/app/shared/housing.csv"]
+COPY ml-service/schemas.py .
+COPY ml-service/train.py .
+COPY ml-service/utils.py .
+COPY ml-service/main.py .
 
 # Stage 3: Build model during image creation
 RUN python train.py

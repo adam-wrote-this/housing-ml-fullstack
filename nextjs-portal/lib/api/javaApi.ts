@@ -1,8 +1,17 @@
 import { requestJson } from "@/lib/api/http";
-import type { MarketSegment, WhatIfRequest, WhatIfResponse } from "@/lib/types";
+import type {
+  MarketDashboard,
+  MarketSegment,
+  WhatIfRequest,
+  WhatIfResponse
+} from "@/lib/types";
 
 export async function fetchMarketSegments(): Promise<MarketSegment[]> {
   return requestJson<MarketSegment[]>("/api/java/market/segments");
+}
+
+export async function fetchMarketDashboard(): Promise<MarketDashboard> {
+  return requestJson<MarketDashboard>("/api/java/market/dashboard");
 }
 
 export async function runWhatIfSimulation(

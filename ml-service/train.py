@@ -1,6 +1,6 @@
 ﻿"""
 Training script for housing price prediction model.
-Reads housing.csv, trains LinearRegression model, and saves to model.joblib.
+Reads the configured housing dataset, trains LinearRegression, and saves model.joblib.
 """
 
 import os
@@ -14,7 +14,10 @@ import numpy as np
 
 def train_model():
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    data_path = os.path.join(current_dir, "housing.csv")
+    data_path = os.getenv(
+        "DATASET_PATH",
+        os.path.join(current_dir, "housing.csv"),
+    )
     model_path = os.path.join(current_dir, "model.joblib")
 
     if not os.path.exists(data_path):

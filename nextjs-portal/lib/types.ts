@@ -14,6 +14,20 @@ export type App1PredictionResponse = {
   message: string;
 };
 
+export type PredictionHistoryItem = {
+  id: string;
+  createdAt: string;
+  inputs: HousingFeatures;
+  predictedPrice: number;
+};
+
+export type PropertyComparisonItem = {
+  id: string;
+  label: string;
+  inputs: HousingFeatures;
+  predictedPrice: number;
+};
+
 export type MarketSegment = {
   segment: string;
   count: number;
@@ -21,6 +35,34 @@ export type MarketSegment = {
   minPrice: number;
   maxPrice: number;
   avgSquareFootage: number;
+};
+
+export type MarketProperty = {
+  id: number;
+  squareFootage: number;
+  bedrooms: number;
+  bathrooms: number;
+  yearBuilt: number;
+  lotSize: number;
+  distanceToCityCenter: number;
+  schoolRating: number;
+  price: number;
+};
+
+export type MarketSummary = {
+  totalProperties: number;
+  averagePrice: number;
+  medianPrice: number;
+  averageSquareFootage: number;
+  averageSchoolRating: number;
+  minPrice: number;
+  maxPrice: number;
+};
+
+export type MarketDashboard = {
+  summary: MarketSummary;
+  segments: MarketSegment[];
+  properties: MarketProperty[];
 };
 
 export type WhatIfRequest = {

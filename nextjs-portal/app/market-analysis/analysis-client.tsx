@@ -1,262 +1,106 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
+import { MarketFiltersPanel } from "@/app/market-analysis/components/MarketFiltersPanel";
+import { MarketOverview } from "@/app/market-analysis/components/MarketOverview";
+import { MarketTable } from "@/app/market-analysis/components/MarketTable";
+import { PriceDistribution } from "@/app/market-analysis/components/PriceDistribution";
+import { WhatIfPanel } from "@/app/market-analysis/components/WhatIfPanel";
 import { useAppUi } from "@/components/AppUiProvider";
-import { fetchMarketSegments, runWhatIfSimulation } from "@/lib/api/javaApi";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
-import { Skeleton } from "@/components/ui/Skeleton";
+import { useMarketFilters } from "@/hooks/useMarketFilters";
 import { translations } from "@/lib/i18n";
-import type { MarketSegment, WhatIfRequest, WhatIfResponse } from "@/lib/types";
+import type { MarketDashboard, MarketProperty } from "@/lib/types";
 
-const initialSimulation: WhatIfRequest = {
-  squareFootage: 2000,
-  bedrooms: 4,
-  bathrooms: 2.5,
-  yearBuilt: 2005,
-  lotSize: 9000,
-  distanceToCityCenter: 6,
-  schoolRating: 8.5,
-  baselineSquareFootage: 1800
+type MarketAnalysisClientProps = {
+  initialDashboard: MarketDashboard;
 };
 
-export default function MarketAnalysisClient() {
-  const [segments, setSegments] = useState<MarketSegment[] | null>(null);
-  const [simulation, setSimulation] = useState<WhatIfRequest>(initialSimulation);
-  const [simulationResult, setSimulationResult] = useState<WhatIfResponse | null>(null);
-  const { locale, setLoading, setError, clearError } = useAppUi();
-  const t = translations[locale];
-
-  useEffect(() => {
-    let active = true;
-    async function loadSegments() {
-      clearError();
-      setLoading(true);
-      try {
-        const data = await fetchMarketSegments();
-        if (active) {
-          setSegments(data);
-        }
-      } catch (error) {
-        if (active) {
-          const message = error instanceof Error ? error.message : "Failed to load segments";
-          setError(message);
-        }
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void loadSegments();
-    return () => {
-      active = false;
-    };
-  }, [clearError, setError, setLoading]);
-
-  async function onRunSimulation(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    clearError();
-    setLoading(true);
-    try {
-      const result = await runWhatIfSimulation(simulation);
-      setSimulationResult(result);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Simulation failed";
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
+function calculateMedian(properties: MarketProperty[]) {
+  if (properties.length === 0) {
+    return 0;
   }
+  const prices = properties.map((property) => property.price).sort((left, right) => left - right);
+  const middle = Math.floor(prices.length / 2);
+  return prices.length % 2 === 0
+    ? (prices[middle - 1] + prices[middle]) / 2
+    : prices[middle];
+}
 
-  const numberFormatter = new Intl.NumberFormat(locale === "en" ? "en-US" : "zh-CN", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0
-  });
+export default function MarketAnalysisClient({ initialDashboard }: MarketAnalysisClientProps) {
+  const { locale } = useAppUi();
+  const t = translations[locale];
+  const market = useMarketFilters(initialDashboard.properties);
+
+  const currencyFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat(locale === "en" ? "en-US" : "zh-CN", {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: 0
+      }),
+    [locale]
+  );
+  const numberFormatter = useMemo(
+    () => new Intl.NumberFormat(locale === "en" ? "en-US" : "zh-CN", {
+      maximumFractionDigits: 1
+    }),
+    [locale]
+  );
+
+  const summary = useMemo(() => {
+    const properties = market.filteredProperties;
+    const divisor = properties.length || 1;
+    return {
+      count: properties.length,
+      averagePrice:
+        properties.reduce((sum, property) => sum + property.price, 0) / divisor,
+      medianPrice: calculateMedian(properties),
+      averageArea:
+        properties.reduce((sum, property) => sum + property.squareFootage, 0) / divisor,
+      averageSchoolRating:
+        properties.reduce((sum, property) => sum + property.schoolRating, 0) / divisor
+    };
+  }, [market.filteredProperties]);
+
+  const formatCurrency = (value: number) => currencyFormatter.format(value);
+  const formatNumber = (value: number) => numberFormatter.format(value);
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <Card title={locale === "en" ? "Market Segments" : "市场分段"}>
-        {!segments ? (
-          <div className="space-y-2">
-            <Skeleton className="h-6 w-full" />
-            <Skeleton className="h-6 w-4/5" />
-            <Skeleton className="h-6 w-3/5" />
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 text-left">
-                  <th className="px-2 py-2 font-semibold">{t.segment}</th>
-                  <th className="px-2 py-2 font-semibold">{t.count}</th>
-                  <th className="px-2 py-2 font-semibold">{t.avgPrice}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {segments.map((segment) => (
-                  <tr key={segment.segment} className="border-b border-slate-100">
-                    <td className="px-2 py-2">{segment.segment}</td>
-                    <td className="px-2 py-2">{segment.count}</td>
-                    <td className="px-2 py-2">{numberFormatter.format(segment.avgPrice ?? 0)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
+    <section className="space-y-6">
+      <header>
+        <h1 className="text-2xl font-semibold text-slate-950">{t.marketPageTitle}</h1>
+        <p className="mt-1 text-sm text-slate-600">{t.marketPageIntro}</p>
+      </header>
 
-      <Card title={t.whatIfTitle}>
-        <form className="space-y-3" onSubmit={onRunSimulation}>
-          <Input
-            label={locale === "en" ? "Square Footage" : "建筑面积"}
-            type="range"
-            min={600}
-            max={5000}
-            step={10}
-            value={simulation.squareFootage}
-            onChange={(event) =>
-              setSimulation((previous) => ({
-                ...previous,
-                squareFootage: Number(event.target.value)
-              }))
-            }
-          />
-          <p className="text-xs text-slate-600">
-            {t.current}: {simulation.squareFootage} sqft
-          </p>
+      <MarketOverview
+        translation={t}
+        totalProperties={initialDashboard.summary.totalProperties}
+        filteredCount={summary.count}
+        averagePrice={summary.averagePrice}
+        medianPrice={summary.medianPrice}
+        averageArea={summary.averageArea}
+        formatCurrency={formatCurrency}
+        formatNumber={formatNumber}
+      />
+      <MarketFiltersPanel market={market} translation={t} />
 
-          <Input
-            label={locale === "en" ? "Baseline Square Footage" : "基准建筑面积"}
-            type="number"
-            step="any"
-            value={simulation.baselineSquareFootage ?? 0}
-            onChange={(event) =>
-              setSimulation((previous) => ({
-                ...previous,
-                baselineSquareFootage: Number(event.target.value)
-              }))
-            }
-          />
+      <div className="grid gap-4 xl:grid-cols-2">
+        <PriceDistribution
+          properties={market.filteredProperties}
+          averageSchoolRating={summary.averageSchoolRating}
+          translation={t}
+          formatCurrency={formatCurrency}
+          formatNumber={formatNumber}
+        />
+        <WhatIfPanel translation={t} formatCurrency={formatCurrency} />
+      </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <Input
-              label={locale === "en" ? "Bedrooms" : "卧室数"}
-              type="number"
-              step="any"
-              value={simulation.bedrooms}
-              onChange={(event) =>
-                setSimulation((previous) => ({
-                  ...previous,
-                  bedrooms: Number(event.target.value)
-                }))
-              }
-            />
-            <Input
-              label={locale === "en" ? "Bathrooms" : "浴室数"}
-              type="number"
-              step="any"
-              value={simulation.bathrooms}
-              onChange={(event) =>
-                setSimulation((previous) => ({
-                  ...previous,
-                  bathrooms: Number(event.target.value)
-                }))
-              }
-            />
-            <Input
-              label={locale === "en" ? "Year Built" : "建成年份"}
-              type="number"
-              step="1"
-              value={simulation.yearBuilt}
-              onChange={(event) =>
-                setSimulation((previous) => ({
-                  ...previous,
-                  yearBuilt: Number(event.target.value)
-                }))
-              }
-            />
-            <Input
-              label={locale === "en" ? "Lot Size" : "地块面积"}
-              type="number"
-              step="any"
-              value={simulation.lotSize}
-              onChange={(event) =>
-                setSimulation((previous) => ({
-                  ...previous,
-                  lotSize: Number(event.target.value)
-                }))
-              }
-            />
-            <Input
-              label={locale === "en" ? "Distance to City Center" : "到市中心距离"}
-              type="number"
-              step="any"
-              value={simulation.distanceToCityCenter}
-              onChange={(event) =>
-                setSimulation((previous) => ({
-                  ...previous,
-                  distanceToCityCenter: Number(event.target.value)
-                }))
-              }
-            />
-            <Input
-              label={locale === "en" ? "School Rating" : "学校评级"}
-              type="number"
-              step="any"
-              value={simulation.schoolRating}
-              onChange={(event) =>
-                setSimulation((previous) => ({
-                  ...previous,
-                  schoolRating: Number(event.target.value)
-                }))
-              }
-            />
-          </div>
-
-          <Button type="submit">{t.runWhatIf}</Button>
-        </form>
-
-        {simulationResult ? (
-          <div className="mt-3 rounded-md border border-brand-50 bg-brand-50 p-3 text-sm text-slate-800">
-            <p>
-              {t.predicted}:{" "}
-              <strong>
-                {new Intl.NumberFormat(locale === "en" ? "en-US" : "zh-CN", {
-                  style: "currency",
-                  currency: "USD"
-                }).format(simulationResult.predictedPrice)}
-              </strong>
-            </p>
-            {simulationResult.baselinePrice != null ? (
-              <p>
-                {t.baseline}:{" "}
-                <strong>
-                  {new Intl.NumberFormat(locale === "en" ? "en-US" : "zh-CN", {
-                    style: "currency",
-                    currency: "USD"
-                  }).format(simulationResult.baselinePrice)}
-                </strong>
-              </p>
-            ) : null}
-            {simulationResult.priceDifference != null ? (
-              <p>
-                {t.difference}:{" "}
-                <strong>
-                  {new Intl.NumberFormat(locale === "en" ? "en-US" : "zh-CN", {
-                    style: "currency",
-                    currency: "USD"
-                  }).format(simulationResult.priceDifference)}
-                </strong>
-              </p>
-            ) : null}
-          </div>
-        ) : null}
-      </Card>
-    </div>
+      <MarketTable
+        market={market}
+        translation={t}
+        formatCurrency={formatCurrency}
+        formatNumber={formatNumber}
+      />
+    </section>
   );
 }

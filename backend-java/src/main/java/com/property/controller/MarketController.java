@@ -1,6 +1,7 @@
 package com.property.controller;
 
 import com.property.dto.HealthResponseDto;
+import com.property.dto.MarketDashboardDto;
 import com.property.dto.MarketSegmentDto;
 import com.property.dto.WhatIfRequestDto;
 import com.property.dto.WhatIfResponseDto;
@@ -32,6 +33,11 @@ public class MarketController {
     @GetMapping("/market/segments")
     public ResponseEntity<List<MarketSegmentDto>> getMarketSegments() {
         return ResponseEntity.ok(marketService.getMarketSegments());
+    }
+
+    @GetMapping("/market/dashboard")
+    public ResponseEntity<MarketDashboardDto> getDashboard() {
+        return ResponseEntity.ok(marketService.getDashboard());
     }
 
     @PostMapping("/market/whatif")

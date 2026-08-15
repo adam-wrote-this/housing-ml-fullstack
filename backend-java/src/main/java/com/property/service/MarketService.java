@@ -1,12 +1,18 @@
 package com.property.service;
 
 import com.property.dto.HousingFeaturesDto;
+import com.property.dto.MarketDashboardDto;
+import com.property.dto.MarketPropertyDto;
 import com.property.dto.MarketSegmentDto;
+import com.property.dto.MarketSummaryDto;
 import com.property.dto.WhatIfRequestDto;
 import com.property.dto.WhatIfResponseDto;
+import com.property.model.HousingRecord;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -14,33 +20,9 @@ import java.util.List;
 public class MarketService {
 
     private final MlClientService mlClientService;
+    private final HousingDatasetService housingDatasetService;
 
-    // Representative sample data covering low/mid/high price segments
-    // Each record: [squareFootage, bedrooms, bathrooms, yearBuilt, lotSize, distanceToCityCenter, schoolRating, price]
-    private static final double[][] SAMPLE_DATA = {
-        // Low segment (<200k)
-        { 850,  2, 1.0, 1975, 4500, 18.0, 4.5, 125000 },
-        { 920,  2, 1.0, 1968, 3800, 22.0, 4.0, 138000 },
-        { 1050, 3, 1.5, 1980, 5200, 20.0, 5.0, 155000 },
-        { 980,  2, 1.0, 1972, 4100, 25.0, 3.5, 142000 },
-        { 1100, 3, 1.5, 1985, 5800, 19.0, 5.5, 168000 },
-        { 1200, 3, 2.0, 1990, 6000, 17.5, 5.0, 185000 },
-        // Mid segment (200k-350k)
-        { 1450, 3, 2.0, 1998, 7500,  9.5, 7.0, 215000 },
-        { 1600, 3, 2.0, 2000, 8000, 10.0, 7.5, 238000 },
-        { 1750, 4, 2.5, 2003, 8500,  8.0, 8.0, 262000 },
-        { 1900, 4, 2.5, 2005, 9000,  7.5, 8.0, 285000 },
-        { 2000, 4, 3.0, 2007, 9500,  7.0, 8.5, 310000 },
-        { 2100, 4, 3.0, 2008, 9200,  6.5, 8.5, 335000 },
-        // High segment (>350k)
-        { 2400, 4, 3.0, 2010, 11000, 4.5, 9.0, 375000 },
-        { 2600, 4, 3.5, 2012, 12000, 4.0, 9.0, 415000 },
-        { 2900, 5, 3.5, 2014, 13500, 3.5, 9.5, 468000 },
-        { 3200, 5, 4.0, 2016, 15000, 3.0, 9.5, 520000 },
-        { 3500, 5, 4.0, 2018, 16500, 2.5, 9.8, 590000 },
-        { 3800, 5, 4.5, 2020, 18000, 2.0, 9.8, 650000 },
-    };
-
+    @Cacheable("marketSegments")
     public List<MarketSegmentDto> getMarketSegments() {
         // Low: <200k
         double[] low = filterByPriceRange(0, 200000);
@@ -54,6 +36,20 @@ public class MarketService {
             buildSegment("$200k - $350k", mid),
             buildSegment("Over $350k", high)
         );
+    }
+
+    @Cacheable("marketDashboard")
+    public MarketDashboardDto getDashboard() {
+        List<HousingRecord> records = housingDatasetService.getRecords();
+        List<MarketPropertyDto> properties = records.stream()
+            .map(this::toMarketProperty)
+            .toList();
+
+        return MarketDashboardDto.builder()
+            .summary(buildSummary(records))
+            .segments(getMarketSegments())
+            .properties(properties)
+            .build();
     }
 
     public WhatIfResponseDto whatIf(WhatIfRequestDto req) {
@@ -100,18 +96,64 @@ public class MarketService {
             .build();
     }
 
+    private MarketPropertyDto toMarketProperty(HousingRecord record) {
+        return MarketPropertyDto.builder()
+            .id(record.id())
+            .squareFootage(record.squareFootage())
+            .bedrooms(record.bedrooms())
+            .bathrooms(record.bathrooms())
+            .yearBuilt(record.yearBuilt())
+            .lotSize(record.lotSize())
+            .distanceToCityCenter(record.distanceToCityCenter())
+            .schoolRating(record.schoolRating())
+            .price(record.price())
+            .build();
+    }
+
+    private MarketSummaryDto buildSummary(List<HousingRecord> records) {
+        double averagePrice = records.stream().mapToDouble(record -> record.price()).average().orElse(0);
+        double averageSquareFootage = records.stream()
+            .mapToDouble(record -> record.squareFootage())
+            .average()
+            .orElse(0);
+        double averageSchoolRating = records.stream()
+            .mapToDouble(record -> record.schoolRating())
+            .average()
+            .orElse(0);
+        double minPrice = records.stream().mapToDouble(record -> record.price()).min().orElse(0);
+        double maxPrice = records.stream().mapToDouble(record -> record.price()).max().orElse(0);
+        List<Double> sortedPrices = records.stream()
+            .map(record -> record.price())
+            .sorted(Comparator.naturalOrder())
+            .toList();
+        int middle = sortedPrices.size() / 2;
+        double medianPrice = sortedPrices.size() % 2 == 0
+            ? (sortedPrices.get(middle - 1) + sortedPrices.get(middle)) / 2
+            : sortedPrices.get(middle);
+
+        return MarketSummaryDto.builder()
+            .totalProperties(records.size())
+            .averagePrice(round(averagePrice))
+            .medianPrice(round(medianPrice))
+            .averageSquareFootage(round(averageSquareFootage))
+            .averageSchoolRating(round(averageSchoolRating))
+            .minPrice(minPrice)
+            .maxPrice(maxPrice)
+            .build();
+    }
+
     private double[] filterByPriceRange(double minPrice, double maxPrice) {
         // Returns [count, sumPrice, minPrice, maxPrice, sumSqft] as raw stats
         int count = 0;
         double sumPrice = 0, minP = Double.MAX_VALUE, maxP = Double.MIN_VALUE, sumSqft = 0;
-        for (double[] row : SAMPLE_DATA) {
-            double price = row[7];
+        for (HousingRecord record : housingDatasetService.getRecords()) {
+            double price = record.price();
             if (price >= minPrice && price < maxPrice) {
                 count++;
                 sumPrice += price;
                 minP = Math.min(minP, price);
                 maxP = Math.max(maxP, price);
-                sumSqft += row[0];
+                sumSqft += record.squareFootage();
             }
         }
         return new double[]{ count, sumPrice, minP, maxP, sumSqft };
@@ -130,5 +172,9 @@ public class MarketService {
             .maxPrice(stats[3])
             .avgSquareFootage(Math.round(stats[4] / count * 100.0) / 100.0)
             .build();
+    }
+
+    private double round(double value) {
+        return Math.round(value * 100.0) / 100.0;
     }
 }
