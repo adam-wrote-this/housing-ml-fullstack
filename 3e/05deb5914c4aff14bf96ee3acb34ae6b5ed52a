@@ -1,0 +1,36 @@
+"docs/Interview Tasks Fullstack PRD.md"
+  h_20bd007142a09e 1-236
+TRD/web-housing-fullstack-adam-wrote-this.md
+  s_93a5dac3d44a1c::t_edf85ad6374157 772-825
+  s_93a5dac3d44a1c::t_7da6b97fd79cac 116-120,123,226-245,283,311-320,322-323,326,328,332,340-343,605-614
+  s_93a5dac3d44a1c::t_87ca545f343951 1-115,121-122,124-225,246-282,284-310,321,324-325,327,329-331,333-339,344-604,615-771,826-845
+nextjs-portal/README.md
+  s_93a5dac3d44a1c::t_1a22c9350ff552 1,3-4,6-11,13-17,19-47,49-122,124,126-132,134-135,138-142,145-183,187-192,194-198,206-304
+  s_93a5dac3d44a1c::t_f64b095cf6ed1f 136-137,143-144
+docs/TEST_PLAN.md
+  s_93a5dac3d44a1c::t_09b000d183f684 345-348,350,369-371,416-417
+  s_93a5dac3d44a1c::t_dd1ac3e8763928 1-92,100,105-109,119-123,125-206,208-209,212-344,349,351,364,366,373,380-415,418-477
+  s_93a5dac3d44a1c::t_350351be50c01c 93-99,101-104,367-368,372,374-379
+  s_93a5dac3d44a1c::t_a426f847c05793 110-118,124,207,210-211,352-363,365
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "3e05deb5914c4aff14bf96ee3acb34ae6b5ed52a",
+  "prompts": {},
+  "humans": {
+    "h_20bd007142a09e": {
+      "author": "ext.lijun116 <ext.lijun116@jd.com>"
+    }
+  },
+  "sessions": {
+    "s_93a5dac3d44a1c": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "a1276ed1-f074-4227-ac2b-ea29ac94391b",
+        "model": "gpt-5-mini"
+      },
+      "human_author": "ext.lijun116 <ext.lijun116@jd.com>"
+    }
+  }
+}
