@@ -4,6 +4,7 @@ import type { MarketDashboard } from "@/lib/types";
 export const dynamic = "force-dynamic";
 
 async function loadMarketDashboard(): Promise<MarketDashboard> {
+  // 服务端取数，避免内部服务地址进入浏览器包。
   const javaBackendUrl = process.env.JAVA_BACKEND_URL || "http://localhost:8080";
   const response = await fetch(`${javaBackendUrl}/market/dashboard`, {
     cache: "no-store"

@@ -1,6 +1,4 @@
-"""
-Utility functions for model loading and metric calculations.
-"""
+"""提供模型加载、输入特征校验和特征排序工具。"""
 
 import os
 import joblib
@@ -8,16 +6,7 @@ from typing import Tuple, List, Dict, Any
 
 
 def load_model() -> Tuple[Any, Dict[str, float], List[str]]:
-    """
-    Load trained model from model.joblib.
-    
-    Returns:
-        Tuple of (model, metrics dict, feature names list)
-        
-    Raises:
-        FileNotFoundError: If model.joblib doesn't exist
-        ValueError: If model data is corrupted
-    """
+    """加载模型产物，并返回模型、评估指标和固定特征顺序。"""
     current_dir = os.path.dirname(os.path.abspath(__file__))
     model_path = os.path.join(current_dir, "model.joblib")
     
@@ -30,7 +19,7 @@ def load_model() -> Tuple[Any, Dict[str, float], List[str]]:
     try:
         model_data = joblib.load(model_path)
         
-        # Validate model data structure
+        # 提供服务前校验持久化模型的数据契约。
         required_keys = {"model", "metrics", "feature_names"}
         if not all(key in model_data for key in required_keys):
             raise ValueError(
@@ -49,19 +38,7 @@ def load_model() -> Tuple[Any, Dict[str, float], List[str]]:
 
 
 def validate_features(features: dict, feature_names: List[str]) -> bool:
-    """
-    Validate that input features match expected feature names.
-    
-    Args:
-        features: Input feature dictionary
-        feature_names: Expected feature names from model
-        
-    Returns:
-        True if valid
-        
-    Raises:
-        ValueError: If features don't match expected names
-    """
+    """校验输入字段与模型要求完全一致，拒绝缺失或额外字段。"""
     input_keys = set(features.keys())
     expected_keys = set(feature_names)
     
@@ -79,15 +56,6 @@ def validate_features(features: dict, feature_names: List[str]) -> bool:
 
 
 def prepare_features_array(features: dict, feature_names: List[str]) -> list:
-    """
-    Convert feature dict to ordered array matching model's feature order.
-    
-    Args:
-        features: Input feature dictionary
-        feature_names: Expected feature names and their order
-        
-    Returns:
-        Ordered list of feature values
-    """
+    """按训练时保存的特征顺序，将字典转换为模型输入数组。"""
     validate_features(features, feature_names)
     return [features[name] for name in feature_names]

@@ -1,7 +1,4 @@
-﻿"""
-Training script for housing price prediction model.
-Reads the configured housing dataset, trains LinearRegression, and saves model.joblib.
-"""
+﻿"""读取配置的数据集，训练线性回归模型并保存模型产物。"""
 
 import os
 import pandas as pd
@@ -13,6 +10,7 @@ import numpy as np
 
 
 def train_model():
+    """完成数据清洗、训练测试集划分、训练评估和模型持久化。"""
     current_dir = os.path.dirname(os.path.abspath(__file__))
     data_path = os.getenv(
         "DATASET_PATH",
@@ -26,7 +24,7 @@ def train_model():
     print(f"Loading data from: {data_path}")
     df = pd.read_csv(data_path)
 
-    # Drop non-feature columns
+    # 标识列不参与模型训练。
     if "id" in df.columns:
         df = df.drop(columns=["id"])
 

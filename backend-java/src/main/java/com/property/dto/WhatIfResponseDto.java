@@ -19,7 +19,7 @@ public class WhatIfResponseDto {
     private Double percentageDifference;
     private List<WhatIfImpactDto> impacts;
 
-    // Legacy aliases remain available for existing API clients.
+    // 保留旧别名以兼容现有 API 客户端。
     private Double predictedPrice;
     private Double baselinePrice;
     private Double priceDifference;

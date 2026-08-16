@@ -102,7 +102,7 @@ export default function PropertyFormClient() {
         setCompareItems(JSON.parse(storedCompare) as PropertyComparisonItem[]);
       }
     } catch {
-      // Ignore invalid localStorage payloads.
+      // 忽略无效的本地存储数据。
     }
 
     return () => {

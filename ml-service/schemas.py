@@ -1,16 +1,11 @@
-﻿"""
-Pydantic schemas for housing price prediction service.
-Supports both single object and batch array input formats.
-Column names match housing.csv: square_footage, bedrooms, bathrooms,
-year_built, lot_size, distance_to_city_center, school_rating
-"""
+﻿"""定义 ML 服务的房屋特征、预测结果、模型信息和健康状态契约。"""
 
 from typing import List, Union
 from pydantic import BaseModel, Field, ConfigDict
 
 
 class HousingFeatures(BaseModel):
-    """Schema for a single housing feature object."""
+    """单条房屋特征请求。"""
     square_footage: float = Field(..., description="Total square footage of the house")
     bedrooms: float = Field(..., description="Number of bedrooms")
     bathrooms: float = Field(..., description="Number of bathrooms")
@@ -34,14 +29,14 @@ class HousingFeatures(BaseModel):
 
 
 class PredictionResponse(BaseModel):
-    """Schema for prediction response."""
+    """单条或批量预测响应。"""
     predictions: Union[float, List[float]] = Field(..., description="Predicted house price(s)")
     status: str = Field(default="success", description="Status of prediction")
     message: str = Field(default="", description="Optional message")
 
 
 class ModelInfoResponse(BaseModel):
-    """Schema for model information response."""
+    """模型参数、特征顺序和评估指标响应。"""
     coefficients: List[float] = Field(..., description="Model coefficients for each feature")
     intercept: float = Field(..., description="Model intercept value")
     feature_names: List[str] = Field(..., description="Names of input features")
@@ -49,7 +44,7 @@ class ModelInfoResponse(BaseModel):
 
 
 class HealthResponse(BaseModel):
-    """Schema for health check response."""
+    """服务和模型加载状态响应。"""
     model_config = ConfigDict(protected_namespaces=())
     status: str = Field(..., description="Service status (ok/error)")
     model_loaded: bool = Field(..., description="Whether the model is loaded")

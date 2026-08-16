@@ -63,6 +63,7 @@ export function useMarketFilters(properties: MarketProperty[]) {
   }, []);
 
   const filteredProperties = useMemo(() => {
+    // 小数据集在客户端筛选排序，以获得即时反馈。
     const filtered = properties.filter((property) => {
       const matchesId =
         filters.searchId === "" || String(property.id).includes(filters.searchId.trim());
@@ -95,11 +96,13 @@ export function useMarketFilters(properties: MarketProperty[]) {
   }, [filters, properties, sort]);
 
   useEffect(() => {
+    // 结果集变化时重置分页。
     setPage(1);
   }, [filters, sort]);
 
   const totalPages = Math.max(1, Math.ceil(filteredProperties.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
+  // 筛选排序后再分页，确保页边界符合可见顺序。
   const visibleProperties = filteredProperties.slice(
     (currentPage - 1) * PAGE_SIZE,
     currentPage * PAGE_SIZE

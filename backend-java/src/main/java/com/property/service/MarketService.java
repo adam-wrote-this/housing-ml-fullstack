@@ -20,6 +20,7 @@ import java.util.Comparator;
 import java.util.ArrayList;
 import java.util.List;
 
+/** 负责市场统计、Dashboard 组装和 What-if 场景分析。 */
 @Service
 @RequiredArgsConstructor
 public class MarketService {
@@ -27,13 +28,14 @@ public class MarketService {
     private final MlClientService mlClientService;
     private final HousingDatasetService housingDatasetService;
 
+    /** 按固定价格区间统计房源数量、价格和平均面积。 */
     @Cacheable(value = CacheConfig.MARKET_SEGMENTS, sync = true)
     public List<MarketSegmentDto> getMarketSegments() {
-        // Low: <200k
+        // 低价区间：20 万美元以下。
         double[] low = filterByPriceRange(0, 200000);
-        // Mid: 200k–350k
+        // 中价区间：20 万至 35 万美元。
         double[] mid = filterByPriceRange(200000, 350000);
-        // High: >350k
+        // 高价区间：35 万美元及以上。
         double[] high = filterByPriceRange(350000, Double.MAX_VALUE);
 
         return List.of(
@@ -43,6 +45,7 @@ public class MarketService {
         );
     }
 
+    /** 组合市场汇总、分段统计和前端可展示的房源列表。 */
     @Cacheable(value = CacheConfig.MARKET_DASHBOARD, sync = true)
     public MarketDashboardDto getDashboard() {
         List<HousingRecord> records = housingDatasetService.getRecords();
@@ -57,11 +60,13 @@ public class MarketService {
             .build();
     }
 
+    /** 根据请求协议选择房源场景分析或完整特征兼容分析。 */
     @Cacheable(value = CacheConfig.WHAT_IF_PREDICTIONS, sync = true)
     public Mono<WhatIfResponseDto> whatIf(WhatIfRequestDto req) {
         Mono<WhatIfResponseDto> result = req.getPropertyId() != null
             ? analyzePropertyScenario(req)
             : analyzeLegacyScenario(req);
+        // 并发订阅者共享同一次 ML 调用。
         return result.cache();
     }
 
@@ -83,6 +88,7 @@ public class MarketService {
 
         List<ImpactCandidate> candidates = buildImpactCandidates(baseline, scenario);
         List<HousingFeaturesDto> predictionInputs = new ArrayList<>();
+        // 批次顺序：基准、完整场景、各字段独立变更。
         predictionInputs.add(baseline);
         predictionInputs.add(scenario);
         candidates.forEach(candidate -> predictionInputs.add(candidate.isolatedFeatures()));
@@ -138,6 +144,7 @@ public class MarketService {
             .distanceToCityCenter(req.getDistanceToCityCenter())
             .schoolRating(req.getSchoolRating())
             .build();
+        // 两次预测并发执行，不阻塞请求线程。
         return Mono.zip(prediction, mlClientService.predict(baseline))
             .map(prices -> buildLegacyResponse(prices.getT1(), prices.getT2()));
     }
@@ -160,8 +167,6 @@ public class MarketService {
             .message("What-if prediction completed")
             .build();
     }
-
-    // ---- helpers ----
 
     private HousingFeaturesDto toFeatures(WhatIfRequestDto req) {
         return HousingFeaturesDto.builder()
@@ -256,6 +261,7 @@ public class MarketService {
         if (Double.compare(baselineValue, scenarioValue) == 0) {
             return;
         }
+        // 每次只修改一个字段，以隔离其价格影响。
         HousingFeaturesDto isolated = copyFeatures(baseline);
         switch (field) {
             case "squareFootage" -> isolated.setSquareFootage(scenarioValue);
@@ -337,7 +343,7 @@ public class MarketService {
     }
 
     private double[] filterByPriceRange(double minPrice, double maxPrice) {
-        // Returns [count, sumPrice, minPrice, maxPrice, sumSqft] as raw stats
+        // 累加器顺序：数量、价格总和、最小值、最大值、面积总和。
         int count = 0;
         double sumPrice = 0, minP = Double.MAX_VALUE, maxP = Double.MIN_VALUE, sumSqft = 0;
         for (HousingRecord record : housingDatasetService.getRecords()) {

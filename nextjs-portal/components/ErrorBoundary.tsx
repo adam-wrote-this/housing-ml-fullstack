@@ -22,7 +22,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   componentDidCatch(error: Error) {
-    // Keep console visibility for debugging in non-prod environments.
+    // 在非生产环境保留控制台错误，便于调试。
     console.error("UI crashed:", error);
   }
 

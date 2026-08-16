@@ -13,7 +13,7 @@ public class WhatIfRequestDto {
     private Long propertyId;
     private WhatIfOverridesDto overrides;
 
-    // Legacy fields remain supported for existing API clients.
+    // 保留旧字段以兼容现有 API 客户端。
     private Double squareFootage;
     private Double bedrooms;
     private Double bathrooms;

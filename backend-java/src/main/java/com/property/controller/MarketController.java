@@ -14,12 +14,14 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
+/** 提供市场看板、价格分段、What-if 分析和健康检查接口。 */
 @RestController
 @RequiredArgsConstructor
 public class MarketController {
 
     private final MarketService marketService;
 
+    /** 返回 Java 服务自身的运行状态，不级联检查 ML 服务。 */
     @GetMapping("/health")
     public ResponseEntity<HealthResponseDto> health() {
         return ResponseEntity.ok(HealthResponseDto.builder()
@@ -30,16 +32,19 @@ public class MarketController {
             .build());
     }
 
+    /** 返回按价格区间聚合的市场统计结果。 */
     @GetMapping("/market/segments")
     public ResponseEntity<List<MarketSegmentDto>> getMarketSegments() {
         return ResponseEntity.ok(marketService.getMarketSegments());
     }
 
+    /** 返回市场汇总指标、价格分段和完整房源列表。 */
     @GetMapping("/market/dashboard")
     public ResponseEntity<MarketDashboardDto> getDashboard() {
         return ResponseEntity.ok(marketService.getDashboard());
     }
 
+    /** 接收基准房源或完整特征，通过 ML 服务执行 What-if 预测。 */
     @PostMapping("/market/whatif")
     public Mono<ResponseEntity<?>> whatIf(@RequestBody WhatIfRequestDto request) {
         if (request.getSquareFootage() == null || request.getBedrooms() == null

@@ -104,6 +104,7 @@ export function WhatIfPanel({
   ) as Record<ScenarioField, string>;
 
   function buildRequest(): WhatIfRequest {
+    // 仅发送变更值，Java 从基准房源补齐其余字段。
     const overrides: WhatIfRequest["overrides"] = {};
     changedFields.forEach((field) => {
       overrides[field] = scenario![field];

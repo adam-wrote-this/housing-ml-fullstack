@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+/** 启动时读取房价 CSV，并向市场业务提供不可变的内存数据集。 */
 @Service
 public class HousingDatasetService {
 
@@ -22,13 +23,16 @@ public class HousingDatasetService {
 
     public HousingDatasetService(@Value("${dataset.path}") String datasetPath) {
         this.datasetPath = Path.of(datasetPath);
+        // 启动时快速失败，并保留一份不可变数据快照。
         this.records = loadRecords();
     }
 
+    /** 返回启动时加载的只读房源记录。 */
     public List<HousingRecord> getRecords() {
         return records;
     }
 
+    /** 返回当前数据集文件路径，供诊断和测试使用。 */
     public Path getDatasetPath() {
         return datasetPath;
     }

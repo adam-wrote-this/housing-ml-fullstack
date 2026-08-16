@@ -29,7 +29,7 @@ export async function requestJson<T>(
       const errorPayload = (await response.json()) as ApiErrorPayload;
       message = errorPayload.detail || errorPayload.message || message;
     } catch {
-      // Preserve fallback message when the backend response is not JSON.
+      // 错误响应不是 JSON 时保留默认消息。
     }
     throw new ApiError(response.status, message);
   }
