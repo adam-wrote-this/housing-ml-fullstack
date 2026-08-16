@@ -104,7 +104,11 @@ export function MarketTable({
     { label: t.propertyId, column: "id" },
     { label: t.price, column: "price" },
     { label: t.area, column: "squareFootage" },
-    { label: t.beds, column: "bedrooms" }
+    { label: t.beds, column: "bedrooms" },
+    { label: t.baths, column: "bathrooms" },
+    { label: t.yearBuilt, column: "yearBuilt" },
+    { label: t.school, column: "schoolRating" },
+    { label: t.distance, column: "distanceToCityCenter" }
   ];
 
   return (
@@ -133,14 +137,6 @@ export function MarketTable({
               <thead className="border-y border-slate-200 bg-slate-50 text-slate-700">
                 <tr>
                   {sortableHeadings.map((heading) => (
-                    <SortableHeading key={heading.column} {...heading} market={market} translation={t} />
-                  ))}
-                  <th className="whitespace-nowrap px-3 py-3 text-left font-semibold">{t.baths}</th>
-                  {[
-                    { label: t.yearBuilt, column: "yearBuilt" as const },
-                    { label: t.school, column: "schoolRating" as const },
-                    { label: t.distance, column: "distanceToCityCenter" as const }
-                  ].map((heading) => (
                     <SortableHeading key={heading.column} {...heading} market={market} translation={t} />
                   ))}
                   <th className="whitespace-nowrap px-3 py-3 text-left font-semibold">

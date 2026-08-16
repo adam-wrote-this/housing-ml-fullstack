@@ -4,11 +4,11 @@ import com.property.dto.HealthResponseDto;
 import com.property.dto.MarketDashboardDto;
 import com.property.dto.MarketSegmentDto;
 import com.property.dto.WhatIfRequestDto;
-import com.property.dto.WhatIfResponseDto;
 import com.property.service.MarketService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 
 import java.time.Instant;
 import java.util.List;
@@ -41,19 +41,18 @@ public class MarketController {
     }
 
     @PostMapping("/market/whatif")
-    public ResponseEntity<?> whatIf(@RequestBody WhatIfRequestDto request) {
-        if (request.getPropertyId() != null) {
-            return ResponseEntity.ok(marketService.whatIf(request));
-        }
+    public Mono<ResponseEntity<?>> whatIf(@RequestBody WhatIfRequestDto request) {
         if (request.getSquareFootage() == null || request.getBedrooms() == null
                 || request.getBathrooms() == null || request.getYearBuilt() == null
                 || request.getLotSize() == null || request.getDistanceToCityCenter() == null
                 || request.getSchoolRating() == null) {
-            return ResponseEntity.badRequest()
-                .body(Map.of("status", "error", "message", "All 7 housing features are required"));
+            if (request.getPropertyId() == null) {
+                return Mono.just(ResponseEntity.badRequest()
+                    .body(Map.of("status", "error", "message", "All 7 housing features are required")));
+            }
         }
-        WhatIfResponseDto response = marketService.whatIf(request);
-        return ResponseEntity.ok(response);
+        return marketService.whatIf(request)
+            .map(response -> ResponseEntity.ok().body(response));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

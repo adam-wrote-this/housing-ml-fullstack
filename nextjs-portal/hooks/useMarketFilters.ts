@@ -7,6 +7,7 @@ export type MarketSortKey =
   | "price"
   | "squareFootage"
   | "bedrooms"
+  | "bathrooms"
   | "yearBuilt"
   | "schoolRating"
   | "distanceToCityCenter";

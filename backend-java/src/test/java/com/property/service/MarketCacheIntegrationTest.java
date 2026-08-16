@@ -10,6 +10,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.caffeine.CaffeineCache;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.Objects;
@@ -48,12 +49,14 @@ class MarketCacheIntegrationTest {
     @Test
     void cachesRepeatedWhatIfPredictionsForEqualRequests() {
         when(mlClientService.predictBatch(org.mockito.ArgumentMatchers.anyList()))
-            .thenReturn(java.util.List.of(320000.0, 350000.0, 350000.0));
+            .thenReturn(Mono.just(java.util.List.of(320000.0, 350000.0, 350000.0)));
         WhatIfRequestDto request = request();
 
-        WhatIfResponseDto first = marketService.whatIf(request);
-        WhatIfResponseDto cached = marketService.whatIf(request());
+        WhatIfResponseDto first = marketService.whatIf(request).block();
+        WhatIfResponseDto cached = marketService.whatIf(request()).block();
 
+        assertThat(first).isNotNull();
+        assertThat(cached).isNotNull();
         assertThat(cached).isSameAs(first);
         assertThat(cached.getScenarioPrediction()).isEqualTo(350000);
         assertThat(cached.getBaselinePrediction()).isEqualTo(320000);

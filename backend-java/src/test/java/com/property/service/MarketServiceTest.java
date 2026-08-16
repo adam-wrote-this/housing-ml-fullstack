@@ -5,6 +5,7 @@ import com.property.dto.WhatIfOverridesDto;
 import com.property.dto.WhatIfRequestDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -54,14 +55,16 @@ class MarketServiceTest {
             1,1250,2,1,1985,5200,3.2,7.1,185000
             """);
         MlClientService mlClient = mock(MlClientService.class);
-        when(mlClient.predictBatch(anyList())).thenReturn(java.util.List.of(180000.0, 215000.0, 215000.0));
+        when(mlClient.predictBatch(anyList()))
+            .thenReturn(Mono.just(java.util.List.of(180000.0, 215000.0, 215000.0)));
         MarketService service = new MarketService(mlClient, new HousingDatasetService(dataset.toString()));
 
         var response = service.whatIf(WhatIfRequestDto.builder()
             .propertyId(1L)
             .overrides(WhatIfOverridesDto.builder().squareFootage(1500.0).build())
-            .build());
+            .build()).block();
 
+        assertThat(response).isNotNull();
         assertThat(response.getPropertyId()).isEqualTo(1);
         assertThat(response.getActualPrice()).isEqualTo(185000);
         assertThat(response.getBaselinePrediction()).isEqualTo(180000);
@@ -94,7 +97,7 @@ class MarketServiceTest {
                 .propertyId(99L)
                 .overrides(WhatIfOverridesDto.builder().squareFootage(1500.0).build())
                 .build()
-        )).isInstanceOf(IllegalArgumentException.class)
+        ).block()).isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("99");
     }
 }

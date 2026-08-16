@@ -33,6 +33,7 @@ public class CacheConfig {
             .maximumSize(maximumSize)
             .expireAfterWrite(expireAfterWrite)
             .recordStats()));
+        cacheManager.setAsyncCacheMode(true);
         cacheManager.setAllowNullValues(false);
         return cacheManager;
     }

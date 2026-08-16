@@ -14,6 +14,7 @@ import com.property.model.HousingRecord;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
 import java.util.Comparator;
 import java.util.ArrayList;
@@ -57,14 +58,14 @@ public class MarketService {
     }
 
     @Cacheable(value = CacheConfig.WHAT_IF_PREDICTIONS, sync = true)
-    public WhatIfResponseDto whatIf(WhatIfRequestDto req) {
-        if (req.getPropertyId() != null) {
-            return analyzePropertyScenario(req);
-        }
-        return analyzeLegacyScenario(req);
+    public Mono<WhatIfResponseDto> whatIf(WhatIfRequestDto req) {
+        Mono<WhatIfResponseDto> result = req.getPropertyId() != null
+            ? analyzePropertyScenario(req)
+            : analyzeLegacyScenario(req);
+        return result.cache();
     }
 
-    private WhatIfResponseDto analyzePropertyScenario(WhatIfRequestDto request) {
+    private Mono<WhatIfResponseDto> analyzePropertyScenario(WhatIfRequestDto request) {
         HousingRecord record = housingDatasetService.getRecords().stream()
             .filter(candidate -> candidate.id() == request.getPropertyId())
             .findFirst()
@@ -86,66 +87,66 @@ public class MarketService {
         predictionInputs.add(scenario);
         candidates.forEach(candidate -> predictionInputs.add(candidate.isolatedFeatures()));
 
-        List<Double> predictions = mlClientService.predictBatch(predictionInputs);
-        double baselinePrediction = predictions.get(0);
-        double scenarioPrediction = predictions.get(1);
-        double priceDifference = scenarioPrediction - baselinePrediction;
-        double percentageDifference = baselinePrediction == 0
-            ? 0
-            : priceDifference / baselinePrediction * 100;
+        return mlClientService.predictBatch(predictionInputs).map(predictions -> {
+            double baselinePrediction = predictions.get(0);
+            double scenarioPrediction = predictions.get(1);
+            double priceDifference = scenarioPrediction - baselinePrediction;
+            double percentageDifference = baselinePrediction == 0
+                ? 0
+                : priceDifference / baselinePrediction * 100;
 
-        List<WhatIfImpactDto> impacts = new ArrayList<>();
-        for (int index = 0; index < candidates.size(); index++) {
-            ImpactCandidate candidate = candidates.get(index);
-            impacts.add(WhatIfImpactDto.builder()
-                .field(candidate.field())
-                .baselineValue(candidate.baselineValue())
-                .scenarioValue(candidate.scenarioValue())
-                .priceImpact(round(predictions.get(index + 2) - baselinePrediction))
-                .build());
-        }
+            List<WhatIfImpactDto> impacts = new ArrayList<>();
+            for (int index = 0; index < candidates.size(); index++) {
+                ImpactCandidate candidate = candidates.get(index);
+                impacts.add(WhatIfImpactDto.builder()
+                    .field(candidate.field())
+                    .baselineValue(candidate.baselineValue())
+                    .scenarioValue(candidate.scenarioValue())
+                    .priceImpact(round(predictions.get(index + 2) - baselinePrediction))
+                    .build());
+            }
 
-        return WhatIfResponseDto.builder()
-            .propertyId(record.id())
-            .actualPrice(record.price())
-            .baselinePrediction(round(baselinePrediction))
-            .scenarioPrediction(round(scenarioPrediction))
-            .priceDifference(round(priceDifference))
-            .percentageDifference(round(percentageDifference))
-            .impacts(impacts)
-            .predictedPrice(round(scenarioPrediction))
-            .baselinePrice(round(baselinePrediction))
-            .status("success")
-            .message("Property scenario analysis completed")
-            .build();
+            return WhatIfResponseDto.builder()
+                .propertyId(record.id())
+                .actualPrice(record.price())
+                .baselinePrediction(round(baselinePrediction))
+                .scenarioPrediction(round(scenarioPrediction))
+                .priceDifference(round(priceDifference))
+                .percentageDifference(round(percentageDifference))
+                .impacts(impacts)
+                .predictedPrice(round(scenarioPrediction))
+                .baselinePrice(round(baselinePrediction))
+                .status("success")
+                .message("Property scenario analysis completed")
+                .build();
+        });
     }
 
-    private WhatIfResponseDto analyzeLegacyScenario(WhatIfRequestDto req) {
+    private Mono<WhatIfResponseDto> analyzeLegacyScenario(WhatIfRequestDto req) {
         HousingFeaturesDto features = toFeatures(req);
-        Double predicted = mlClientService.predict(features);
-
-        Double baselinePrice = null;
-        Double priceDifference = null;
-
-        if (req.getBaselineSquareFootage() != null) {
-            HousingFeaturesDto baseline = HousingFeaturesDto.builder()
-                .squareFootage(req.getBaselineSquareFootage())
-                .bedrooms(req.getBedrooms())
-                .bathrooms(req.getBathrooms())
-                .yearBuilt(req.getYearBuilt())
-                .lotSize(req.getLotSize())
-                .distanceToCityCenter(req.getDistanceToCityCenter())
-                .schoolRating(req.getSchoolRating())
-                .build();
-            baselinePrice = mlClientService.predict(baseline);
-            priceDifference = predicted - baselinePrice;
+        Mono<Double> prediction = mlClientService.predict(features);
+        if (req.getBaselineSquareFootage() == null) {
+            return prediction.map(predicted -> buildLegacyResponse(predicted, null));
         }
-        Double percentageDifference = null;
-        if (baselinePrice != null && baselinePrice != 0 && priceDifference != null) {
-            percentageDifference = round(
-                priceDifference.doubleValue() / baselinePrice.doubleValue() * 100
-            );
-        }
+
+        HousingFeaturesDto baseline = HousingFeaturesDto.builder()
+            .squareFootage(req.getBaselineSquareFootage())
+            .bedrooms(req.getBedrooms())
+            .bathrooms(req.getBathrooms())
+            .yearBuilt(req.getYearBuilt())
+            .lotSize(req.getLotSize())
+            .distanceToCityCenter(req.getDistanceToCityCenter())
+            .schoolRating(req.getSchoolRating())
+            .build();
+        return Mono.zip(prediction, mlClientService.predict(baseline))
+            .map(prices -> buildLegacyResponse(prices.getT1(), prices.getT2()));
+    }
+
+    private WhatIfResponseDto buildLegacyResponse(Double predicted, Double baselinePrice) {
+        Double priceDifference = baselinePrice == null ? null : predicted - baselinePrice;
+        Double percentageDifference = baselinePrice == null || baselinePrice == 0
+            ? null
+            : round(priceDifference / baselinePrice * 100);
 
         return WhatIfResponseDto.builder()
             .baselinePrediction(baselinePrice)

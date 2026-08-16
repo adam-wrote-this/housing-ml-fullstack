@@ -1,6 +1,6 @@
 # Java Market Backend
 
-App2 市场分析后端，基于 Java 21、Spring Boot、Spring Cache 和 Caffeine。它读取房价数据集生成市场看板，并通过 ML 服务执行 What-if 仿真。
+App2 市场分析后端，基于 Java 21、Spring Boot、WebClient、Reactor、Spring Cache 和 Caffeine。它读取房价数据集生成市场看板，并通过非阻塞 HTTP 调用 ML 服务执行 What-if 仿真。
 
 ## 架构位置
 
@@ -70,6 +70,18 @@ curl -X POST http://localhost:8080/market/whatif \
 
 错误语义：不存在的 `propertyId`、缺少 `overrides`、场景值越界或兼容协议缺字段返回 `400`；ML 调用失败返回 `503`。
 
+## 异步 HTTP 调用
+
+What-if 链路从 Controller 到 ML Client 全程返回 Reactor `Mono`：
+
+```text
+MarketController -> Mono<ResponseEntity<?>>
+MarketService    -> Mono<WhatIfResponseDto>
+MlClientService  -> WebClient -> Mono<Double/List<Double>>
+```
+
+生产代码不调用 `.block()`。WebClient 等待 ML 响应时不会占用 Servlet 请求线程；Spring MVC 会订阅 `Mono` 并在结果到达后异步完成响应。兼容协议需要场景价和基准价时使用 `Mono.zip` 并发请求。What-if 的 Caffeine 缓存启用了 async cache mode，以支持 `@Cacheable` 的响应式返回值。
+
 ## 数据与缓存
 
 Compose 将 `docs/House Price Dataset.csv` 只读挂载到 `/app/shared/housing.csv`。服务为以下计算启用 Caffeine 缓存：
@@ -85,6 +97,8 @@ Compose 将 `docs/House Price Dataset.csv` 只读挂载到 `/app/shared/housing.
 | 变量 | Compose 值 | 默认值 | 说明 |
 |---|---|---|---|
 | `ML_SERVICE_URL` | `http://ml-service:8000` | `http://localhost:8000` | ML 服务地址 |
+| `ML_CONNECT_TIMEOUT` | `2s` | `2s` | 建立 ML 连接的最大等待时间 |
+| `ML_RESPONSE_TIMEOUT` | `10s` | `10s` | 等待 ML 响应的最大时间 |
 | `DATASET_PATH` | `/app/shared/housing.csv` | `../docs/House Price Dataset.csv` | CSV 数据集路径 |
 | `CACHE_MAXIMUM_SIZE` | `1000` | `1000` | 缓存最大条目数 |
 | `CACHE_EXPIRE_AFTER_WRITE` | `15m` | `15m` | 写入后的过期时间 |
@@ -120,7 +134,7 @@ mvn test
 
 ```text
 src/main/java/com/property/
-├── config/       # RestTemplate 与缓存配置
+├── config/       # WebClient、超时、CORS 与缓存配置
 ├── controller/   # HTTP API 和异常映射
 ├── dto/          # API 与 ML 数据契约
 ├── model/        # CSV 房源记录

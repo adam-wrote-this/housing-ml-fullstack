@@ -4,63 +4,77 @@ import com.property.dto.HousingFeaturesDto;
 import com.property.dto.MlPredictionResponseDto;
 import com.property.dto.MlBatchPredictionResponseDto;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 @Service
 @RequiredArgsConstructor
 public class MlClientService {
 
-    private final RestTemplate restTemplate;
+    private final WebClient mlWebClient;
 
-    @Value("${ml.service.url}")
-    private String mlServiceUrl;
-
-    public Double predict(HousingFeaturesDto features) {
-        String url = mlServiceUrl + "/predict";
-        try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<HousingFeaturesDto> request = new HttpEntity<>(features, headers);
-            ResponseEntity<MlPredictionResponseDto> response = restTemplate.postForEntity(
-                url,
-                request,
-                MlPredictionResponseDto.class
+    public Mono<Double> predict(HousingFeaturesDto features) {
+        return mlWebClient.post()
+            .uri("/predict")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(features)
+            .retrieve()
+            .onStatus(status -> status.isError(), response -> response.bodyToMono(String.class)
+                .defaultIfEmpty("No response body")
+                .flatMap(body -> Mono.error(new RuntimeException(
+                    "ML service returned error " + response.statusCode().value() + ": " + body
+                ))))
+            .bodyToMono(MlPredictionResponseDto.class)
+            .switchIfEmpty(Mono.error(new IllegalStateException(
+                "ML service returned an empty response"
+            )))
+            .map(response -> {
+                if (response.getPredictions() == null) {
+                    throw new IllegalStateException("ML service returned an empty prediction");
+                }
+                return response.getPredictions();
+            })
+            .onErrorMap(WebClientRequestException.class, exception ->
+                new RuntimeException("ML service unavailable: " + exception.getMessage(), exception)
+            )
+            .onErrorMap(TimeoutException.class, exception ->
+                new RuntimeException("ML service request timed out", exception)
             );
-            MlPredictionResponseDto body = response.getBody();
-            if (body == null || body.getPredictions() == null) {
-                throw new IllegalStateException("ML service returned an empty prediction");
-            }
-            return body.getPredictions();
-        } catch (RestClientException e) {
-            throw new RuntimeException("ML service unavailable: " + e.getMessage(), e);
-        }
     }
 
-    public List<Double> predictBatch(List<HousingFeaturesDto> features) {
-        String url = mlServiceUrl + "/predict";
-        try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<List<HousingFeaturesDto>> request = new HttpEntity<>(features, headers);
-            ResponseEntity<MlBatchPredictionResponseDto> response = restTemplate.postForEntity(
-                url,
-                request,
-                MlBatchPredictionResponseDto.class
+    public Mono<List<Double>> predictBatch(List<HousingFeaturesDto> features) {
+        return mlWebClient.post()
+            .uri("/predict")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(features)
+            .retrieve()
+            .onStatus(status -> status.isError(), response -> response.bodyToMono(String.class)
+                .defaultIfEmpty("No response body")
+                .flatMap(body -> Mono.error(new RuntimeException(
+                    "ML service returned error " + response.statusCode().value() + ": " + body
+                ))))
+            .bodyToMono(MlBatchPredictionResponseDto.class)
+            .switchIfEmpty(Mono.error(new IllegalStateException(
+                "ML service returned an empty response"
+            )))
+            .map(response -> {
+                List<Double> predictions = response.getPredictions();
+                if (predictions == null || predictions.size() != features.size()) {
+                    throw new IllegalStateException("ML service returned an invalid batch prediction");
+                }
+                return predictions;
+            })
+            .onErrorMap(WebClientRequestException.class, exception ->
+                new RuntimeException("ML service unavailable: " + exception.getMessage(), exception)
+            )
+            .onErrorMap(TimeoutException.class, exception ->
+                new RuntimeException("ML service request timed out", exception)
             );
-            MlBatchPredictionResponseDto body = response.getBody();
-            if (body == null || body.getPredictions() == null
-                    || body.getPredictions().size() != features.size()) {
-                throw new IllegalStateException("ML service returned an invalid batch prediction");
-            }
-            return body.getPredictions();
-        } catch (RestClientException e) {
-            throw new RuntimeException("ML service unavailable: " + e.getMessage(), e);
-        }
     }
 }
