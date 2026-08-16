@@ -1,0 +1,24 @@
+nextjs-portal/Dockerfile
+  s_e2e13d6d6938d7::t_a617a0a5a028c3 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "ef5814dd292d703851b76f6c2749aea871c3a496",
+  "prompts": {},
+  "humans": {
+    "h_20bd007142a09e": {
+      "author": "ext.lijun116 <ext.lijun116@jd.com>"
+    }
+  },
+  "sessions": {
+    "s_e2e13d6d6938d7": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "1d097504-52ee-4a41-95f1-6beeec1cb01f",
+        "model": "gpt-5-mini"
+      },
+      "human_author": "ext.lijun116 <ext.lijun116@jd.com>"
+    }
+  }
+}
