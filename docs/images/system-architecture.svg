@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">Housing ML Fullstack system architecture</title>
+  <desc id="desc">The browser accesses the Next.js portal, which routes requests to Python and Java backends. Both backends call the ML inference service. The ML service and Java backend read the shared housing dataset.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#334155"/>
+    </marker>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.12"/>
+    </filter>
+    <style>
+      .title { font: 700 32px 'Segoe UI', Arial, sans-serif; fill: #0f172a; }
+      .subtitle { font: 400 17px 'Segoe UI', Arial, sans-serif; fill: #475569; }
+      .service-title { font: 700 20px 'Segoe UI', Arial, sans-serif; fill: #0f172a; }
+      .service-name { font: 600 15px 'Segoe UI', Arial, sans-serif; fill: #334155; }
+      .detail { font: 400 14px 'Segoe UI', Arial, sans-serif; fill: #475569; }
+      .flow-label { font: 600 13px 'Segoe UI', Arial, sans-serif; fill: #475569; }
+      .box { stroke-width: 2; filter: url(#shadow); }
+      .arrow { fill: none; stroke: #334155; stroke-width: 2.5; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <rect width="1200" height="760" fill="#f8fafc"/>
+  <text x="600" y="48" text-anchor="middle" class="title">Housing ML Fullstack Architecture</text>
+  <text x="600" y="76" text-anchor="middle" class="subtitle">全栈房价预测系统架构</text>
+
+  <rect x="430" y="110" width="340" height="92" rx="8" fill="#ffffff" stroke="#64748b" class="box"/>
+  <text x="600" y="145" text-anchor="middle" class="service-title">User / Browser</text>
+  <text x="600" y="174" text-anchor="middle" class="service-name">用户 / 浏览器</text>
+
+  <path d="M600 202 L600 252" class="arrow"/>
+  <text x="620" y="233" class="flow-label">HTTP :3000</text>
+
+  <rect x="390" y="255" width="420" height="120" rx="8" fill="#ecfeff" stroke="#0891b2" class="box"/>
+  <text x="600" y="290" text-anchor="middle" class="service-title">Next.js Portal</text>
+  <text x="600" y="316" text-anchor="middle" class="service-name">frontend:3000 · App Router</text>
+  <text x="600" y="345" text-anchor="middle" class="detail">Home · Property Form · Market Analysis</text>
+
+  <path d="M515 375 L330 442" class="arrow"/>
+  <path d="M685 375 L870 442" class="arrow"/>
+  <text x="362" y="404" class="flow-label">/api/python/*</text>
+  <text x="722" y="404" class="flow-label">/api/java/*</text>
+
+  <rect x="110" y="445" width="390" height="135" rx="8" fill="#eff6ff" stroke="#2563eb" class="box"/>
+  <text x="305" y="480" text-anchor="middle" class="service-title">Python Backend</text>
+  <text x="305" y="506" text-anchor="middle" class="service-name">app1-python:8001 · FastAPI</text>
+  <text x="305" y="537" text-anchor="middle" class="detail">POST /property/predict</text>
+  <text x="305" y="561" text-anchor="middle" class="detail">Property submission / 房源录入预测</text>
+
+  <rect x="700" y="445" width="390" height="135" rx="8" fill="#fff7ed" stroke="#ea580c" class="box"/>
+  <text x="895" y="480" text-anchor="middle" class="service-title">Java Backend</text>
+  <text x="895" y="506" text-anchor="middle" class="service-name">app2-java:8080 · Spring Boot</text>
+  <text x="895" y="537" text-anchor="middle" class="detail">GET /market/segments · POST /market/whatif</text>
+  <text x="895" y="561" text-anchor="middle" class="detail">Market analysis / 市场分析与仿真</text>
+
+  <path d="M305 580 L440 640" class="arrow"/>
+  <path d="M895 580 L760 640" class="arrow"/>
+  <text x="280" y="625" class="flow-label">POST /predict</text>
+  <text x="820" y="625" class="flow-label">POST /predict</text>
+
+  <rect x="390" y="635" width="420" height="100" rx="8" fill="#f0fdf4" stroke="#16a34a" class="box"/>
+  <text x="600" y="670" text-anchor="middle" class="service-title">ML Inference Service</text>
+  <text x="600" y="696" text-anchor="middle" class="service-name">ml-service:8000 · FastAPI + scikit-learn</text>
+  <text x="600" y="720" text-anchor="middle" class="detail">LinearRegression · /health · /predict · /model-info</text>
+
+  <rect x="930" y="640" width="220" height="86" rx="8" fill="#fefce8" stroke="#ca8a04" class="box"/>
+  <text x="1040" y="674" text-anchor="middle" class="service-title">Housing Dataset</text>
+  <text x="1040" y="700" text-anchor="middle" class="detail">House Price Dataset.csv</text>
+  <path d="M812 680 L930 680" class="arrow"/>
+  <path d="M930 582 L1040 640" class="arrow"/>
+</svg>

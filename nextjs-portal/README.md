@@ -191,6 +191,22 @@ nextjs-portal/
 
 Docker 容器中的 `localhost` 指向容器自身，因此前端容器必须通过 Compose 服务名 `app1-python` 和 `app2-java` 访问后端。
 
+## 容器运行模式与卷挂载
+
+当前前端 Dockerfile 和 Compose 面向本地开发与面试演示，运行 `next dev`，不是生产模式的 `next start`。以下配置支持 Windows 上的代码热更新：
+
+```yaml
+volumes:
+	- ./nextjs-portal:/app
+	- /app/node_modules
+```
+
+- `./nextjs-portal:/app`：将宿主机源码绑定挂载到容器，修改代码后容器立即可见。
+- `/app/node_modules`：使用匿名卷保留容器内安装的 Linux 依赖，避免被宿主机目录覆盖。
+- `CHOKIDAR_USEPOLLING` 和 `WATCHPACK_POLLING`：通过轮询检测 Windows 文件变化。
+
+这种配置适合开发，不用于不可变生产镜像。生产部署应使用多阶段 Dockerfile 执行 `npm run build`，运行 `npm run start`，并移除源码卷挂载。
+
 ## 运行方式
 
 ### Docker 一键启动（推荐）
@@ -223,6 +239,18 @@ docker compose down
 
 先确保 Python 和 Java 后端已在宿主机端口启动，再执行：
 
+PowerShell：
+
+```powershell
+cd nextjs-portal
+npm install
+$env:PYTHON_BACKEND_URL = "http://localhost:8001"
+$env:JAVA_BACKEND_URL = "http://localhost:8080"
+npm run dev
+```
+
+Bash：
+
 ```bash
 cd nextjs-portal
 npm install
@@ -235,9 +263,27 @@ npm run dev
 
 ```bash
 npm run dev     # 启动开发服务器
-npm run build   # 生产构建、类型检查和 lint
+npm run build   # 生产构建和 TypeScript 检查
 npm run start   # 启动已构建的生产服务
 npm run lint    # Next.js ESLint
+```
+
+## 功能验收
+
+启动完整 Compose 后依次验证：
+
+1. 打开 `http://localhost:3000`，确认首页和中英文切换正常。
+2. 打开 `/property-form`，提交七项房屋特征并确认显示预测价格。
+3. 打开 `/market-analysis`，确认汇总、价格分段和房源表格加载完成。
+4. 选择房源并修改 What-if 参数，确认预测差值与字段影响更新。
+5. 在请求期间确认全局 loading 出现；输入或上游错误应显示全局错误提示而非白屏。
+
+提交前执行：
+
+```bash
+cd nextjs-portal
+npm run lint
+npm run build
 ```
 
 ## 错误处理

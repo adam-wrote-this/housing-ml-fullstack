@@ -14,46 +14,7 @@
 
 ## 2. System Architecture / 系统架构
 
-```text
-                        ┌──────────────────────────────┐
-                        │   User / Browser            │
-                        │   用户 / 浏览器             │
-                        └──────────────┬───────────────┘
-                                       │
-                                       │ Access / 访问
-                                       ▼
-                ┌──────────────────────────────────────────┐
-                │  Next.js Portal / 前端门户             │
-                │  frontend:3000                         │
-                │  - Home / 首页                          │
-                │  - Property Form / 房源录入            │
-                │  - Market Analysis / 市场分析          │
-                └──────────────┬───────────────────────────┘
-                               │
-                ┌──────────────┼──────────────┐
-                │              │              │
-                ▼              ▼              ▼
-      ┌───────────────────┐   ┌───────────────────┐   ┌───────────────────┐
-      │ Python Backend    │   │ Java Backend      │   │ ML Inference      │
-      │ app1-python       │   │ app2-java         │   │ ml-service        │
-      │ 8001              │   │ 8080              │   │ 8000              │
-      │                   │   │                   │   │                   │
-      │ /property/predict │   │ /market/segments  │   │ /health           │
-      │                   │   │ /market/whatif    │   │ /predict          │
-      │                   │   │                   │   │ /model-info       │
-      └─────────┬─────────┘   └─────────┬─────────┘   └─────────┬─────────┘
-                │                         │                         │
-                │                         │                         │
-                └─────────────────────────┼─────────────────────────┘
-                                          │
-                                          │ Load training data / model
-                                          │ 读取训练数据 / 载入模型
-                                          ▼
-                            ┌──────────────────────────────┐
-                            │ housing.csv + LinearRegression│
-                            │ model / 模型                 │
-                            └──────────────────────────────┘
-```
+![Housing ML Fullstack system architecture](docs/images/system-architecture.svg)
 
 ### Architecture Story / 架构说明
 
